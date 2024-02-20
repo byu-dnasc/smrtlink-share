@@ -7,7 +7,9 @@ class DnascSmrtLinkClient(SmrtLinkClient):
     
     def get_project(self, id):
         """Retrieve a list of projects"""
-        return self.get(f"/smrt-link/projects/{id}")
+        j = self.get(f"/smrt-link/projects/{id}")
+        p = Project.from_json(j)
+        return p
     
     @staticmethod
     def connect():
