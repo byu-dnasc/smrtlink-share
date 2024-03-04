@@ -21,10 +21,18 @@ def app():
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
-    def do_POST(self):
+    def _minimum_viable_response(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b'Hello, world!')
+
+    def do_POST(self):
+        self._minimum_viable_response()
+
+    def do_PUT(self):
+        self._minimum_viable_response()
+
+    def do_DELETE(self):
+        self._minimum_viable_response()
 
 class StoppableHTTPServer(HTTPServer):
 

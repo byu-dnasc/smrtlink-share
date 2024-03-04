@@ -10,20 +10,29 @@ def _handler_with_logger(logger):
                 content_length = int(self.headers['Content-Length'])
             self.log.info(f'{self.command} {self.path} {content_length}')
         
-        def do_GET(self):
-            self._log_request()
+        def _minimum_viable_response(self):
+            '''
+            Send the minimum viable response to NGINX (proxy)
+            Anything less may work, but an error will be logged
+            '''
             self.send_response(200)
             self.end_headers()
+        
+        def do_GET(self):
+            self._minimum_viable_response()
             self.wfile.write(b'smrtlink-share app is online')
-
-        def do_POST(self):
-            self.send_response_only(200)
             self._log_request()
 
         def do_PUT(self):
-            self._log_request()
-            
+            self._minimum_viable_response()
+            self._log_request()            
+
+        def do_POST(self):
+            self._minimum_viable_response()
+            self._log_request()            
+
         def do_DELETE(self):
+            self._minimum_viable_response()
             self._log_request()
 
     return RequestHandler

@@ -29,6 +29,8 @@ def test_sl_server_fixture():
     assert do_request(port=9091, method="POST")
 
 def test():
-    assert do_request()
+    assert do_request(method="PUT")
+    assert do_request(method="POST")
+    assert do_request(method="DELETE")
     with open("tests/request.log", "r") as f:
-        assert len(f.readlines()) == 1
+        assert len(f.readlines()) == 3
