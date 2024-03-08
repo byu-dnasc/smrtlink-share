@@ -1,7 +1,15 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from time import sleep
+import handle
 
 def _handler_with_logger(logger):
-    class RequestHandler(BaseHTTPRequestHandler):
+    '''
+    Factory function to create a RequestHandler class ("Dispatcher") with a logger
+    '''
+    class Dispatcher(BaseHTTPRequestHandler):
+        '''
+        Respond to and log requests, then dispatch a handler
+        '''
         log = logger
 
         def _log_request(self):
@@ -18,24 +26,31 @@ def _handler_with_logger(logger):
             self.send_response(200)
             self.end_headers()
         
+        def _respond_log_wait(self):
+            self._minimum_viable_response() # RESPOND to NGINX
+            self._log_request() # LOG the request
+            sleep(1) # WAIT for SMRT Link to process the request
+        
         def do_GET(self):
             self._minimum_viable_response()
-            self.wfile.write(b'smrtlink-share app is online')
             self._log_request()
+            self.wfile.write(b'smrtlink-share app is online')
 
         def do_PUT(self):
-            self._minimum_viable_response()
-            self._log_request()            
+            self._respond_log_wait()
+            project_id = self.path.split('/')[-1]
+            handle.update_project(project_id)
 
         def do_POST(self):
-            self._minimum_viable_response()
-            self._log_request()            
+            self._respond_log_wait()
+            handle.new_project()
 
         def do_DELETE(self):
-            self._minimum_viable_response()
-            self._log_request()
+            self._respond_log_wait()
+            project_id = self.path.split('/')[-1]
+            handle.delete_project(project_id)
 
-    return RequestHandler
+    return Dispatcher
 
 class App(HTTPServer):
 
