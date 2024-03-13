@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Tomato",
+    "updatedAt": "2024-03-11T20:16:38.435Z",
+    "state": "CREATED",
+    "description": "",
+    "datasets": [
+        {
+        "comments": "ccs dataset converted",
+        "createdAt": "2024-03-03T11:58:47.590Z",
+        "createdBy": "admin",
+        "id": 33,
+        "importedAt": "2024-03-07T19:37:52.603Z",
+        "isActive": true,
+        "jobId": 25,
+        "md5": "528c8b7cb7b0fc8318049162f535618c",
+        "name": "Germany tomato 20 and 21-Cell1 (all samples)",
+        "numChildren": 2,
+        "numRecords": 3318747,
+        "numResources": 2,
+        "path": "/home/dnasc/smrtlink-container/data/L9j.pacb/pb_formats/m84100_240301_194028_s1.hifi_reads.consensusreadset.xml",
+        "projectId": 2,
+        "tags": "ccs,barcoded",
+        "totalLength": 57637268449,
+        "updatedAt": "2024-03-11T20:16:38.444Z",
+        "uuid": "48a71a3e-c97c-43ea-ba41-8c2b31dd32b2",
+        "version": "3.0.1"
+        }
+    ],
+    "id": 2,
+    "createdAt": "2024-02-12T17:41:17.950Z",
+    "isActive": true,
+    "members": [
+        {
+        "login": "admin",
+        "role": "OWNER"
+        },
+        {
+        "login": "dnasc",
+        "role": "CAN_VIEW"
+        }
+    ]
+  }
+]
