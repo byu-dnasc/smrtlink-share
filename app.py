@@ -1,6 +1,5 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from time import sleep
-import handle
 
 def _handler_with_logger(logger):
     '''
@@ -39,20 +38,20 @@ def _handler_with_logger(logger):
         def do_PUT(self):
             self._respond_log_wait()
             project_id = self.path.split('/')[-1]
-            handle.update_project(project_id)
+            # handle.update_project(project_id)
 
         def do_POST(self):
             self._respond_log_wait()
-            handle.new_project()
+            # handle.new_project()
 
         def do_DELETE(self):
             self._respond_log_wait()
             project_id = self.path.split('/')[-1]
-            handle.delete_project(project_id)
+            # handle.delete_project(project_id)
 
     return Dispatcher
 
-class App(HTTPServer):
+class App(ThreadingHTTPServer):
 
     def __init__(self, server_address, logger):
         super().__init__(server_address, _handler_with_logger(logger))
