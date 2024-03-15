@@ -1,5 +1,47 @@
 [
   {
+    "name": "General Project",
+    "updatedAt": "2024-02-02T00:16:25.135Z",
+    "grantRoleToAll": "CAN_VIEW",
+    "state": "CREATED",
+    "description": "General SMRT Link project. By default all imported datasets and analysis jobs will be assigned to this project",
+    "datasets": [
+      {
+        "comments": "Barcode  imported",
+        "createdAt": "2023-03-08T16:20:58.000Z",
+        "id": 16,
+        "importedAt": "2024-02-01T23:43:36.829Z",
+        "isActive": true,
+        "jobId": 18,
+        "md5": "0084986eda4ec8963ec27c2d90030529",
+        "name": "MAS-Seq Adapter v3 (MAS8)",
+        "numChildren": 0,
+        "numRecords": 9,
+        "numResources": 1,
+        "path": "/home/adkna/smrtlink-container/smrtlink/install/smrtlink-release_13.0.0.207600/admin/bin/../../bundles/smrtinub/current/private/pacbio/barcodes/MAS-Seq_Adapter_v3/MAS-Seq_Adapter_v3.barcodeset.xml",
+        "projectId": 1,
+        "tags": "pacbio,mas_seq",
+        "totalLength": 150,
+        "updatedAt": "2024-02-02T00:16:25.141Z",
+        "uuid": "b16188a2-249e-4f0e-fcca-7c2b9a307387",
+        "version": "3.0.1"
+      }
+    ],
+    "id": 1,
+    "createdAt": "2024-02-01T23:42:14.950Z",
+    "isActive": true,
+    "members": [
+      {
+        "login": "admin",
+        "role": "OWNER"
+      },
+      {
+        "login": "superawesomeuser",
+        "role": "CAN_VIEW"
+      }
+    ]
+  },
+  {
     "name": "Tomato",
     "updatedAt": "2024-03-11T20:16:38.435Z",
     "state": "CREATED",
