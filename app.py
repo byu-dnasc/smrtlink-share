@@ -1,5 +1,6 @@
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from time import sleep
+import project
 
 def _get_project_id(uri):
     project_id = uri.split('/')[-1]
@@ -44,17 +45,24 @@ def _handler_with_logger(logger):
 
         def do_PUT(self):
             self._respond_log_wait()
-            _get_project_id(self.path)
-            # handle.update_project(project_id)
+            project_id = _get_project_id(self.path)
+            if project_id:
+                pass
 
         def do_POST(self):
             self._respond_log_wait()
-            # handle.new_project()
+            try:
+                new_project = project.get_new()
+                # TODO: stage project
+                new_project.save(force_insert=True)
+            except project.OutOfSyncError:
+                pass
 
         def do_DELETE(self):
             self._respond_log_wait()
-            _get_project_id(self.path)
-            # handle.delete_project(project_id)
+            project_id = _get_project_id(self.path)
+            if project_id:
+                pass
 
     return Dispatcher
 
