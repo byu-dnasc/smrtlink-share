@@ -1,6 +1,13 @@
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from time import sleep
 
+def _get_project_id(uri):
+    project_id = uri.split('/')[-1]
+    try:
+        return int(project_id)
+    except ValueError:
+        return None
+
 def _handler_with_logger(logger):
     '''
     Factory function to create a RequestHandler class ("Dispatcher") with a logger
@@ -37,7 +44,7 @@ def _handler_with_logger(logger):
 
         def do_PUT(self):
             self._respond_log_wait()
-            project_id = self.path.split('/')[-1]
+            _get_project_id(self.path)
             # handle.update_project(project_id)
 
         def do_POST(self):
@@ -46,7 +53,7 @@ def _handler_with_logger(logger):
 
         def do_DELETE(self):
             self._respond_log_wait()
-            project_id = self.path.split('/')[-1]
+            _get_project_id(self.path)
             # handle.delete_project(project_id)
 
     return Dispatcher
