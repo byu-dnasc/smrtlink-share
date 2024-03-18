@@ -25,9 +25,9 @@ def dict_to_project(dct):
 def get(id) -> Project:
     '''Returns a Project object, or None if not found.'''
     sl_client = smrtlink.get_client()
-    project = sl_client.get_project_dict(id)
-    if project:
-        return dict_to_project(project)
+    project_dict = sl_client.get_project_dict(id)
+    if project_dict:
+        return dict_to_project(project_dict)
     return None
 
 class OutOfSyncError(Exception):
@@ -44,7 +44,8 @@ def get_new():
     elif offset > 1:
         raise OutOfSyncError()
 
-    return sl_client.get_project_dict(sl_ids[-1])
+    new_project_dict = sl_client.get_project_dict(sl_ids[-1])
+    return dict_to_project(new_project_dict)
 
 def init_db(db_file):
     db = pw.SqliteDatabase(db_file)
