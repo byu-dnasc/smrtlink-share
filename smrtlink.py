@@ -19,6 +19,14 @@ class DnascSmrtLinkClient(SmrtLinkClient):
         lst = self.get("/smrt-link/projects")
         return [dct['id'] for dct in lst]
     
+    def get_dataset(self, uuid):
+        '''Returns a dictionary of dataset data, or None if not found.'''
+        try:
+            return self.get_consensusreadset(uuid)
+        except HTTPError as e:
+            assert e.response.status_code == 404, 'Unexpected error when getting dataset from SMRT Link'
+            return None
+    
     @staticmethod
     def connect():
         '''Returns SmrtLinkClient, or exits if cannot connect'''
