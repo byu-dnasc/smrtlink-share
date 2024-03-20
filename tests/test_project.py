@@ -4,6 +4,8 @@ import peewee as pw
 import project
 import smrtlink
 
+pytestmark = pytest.mark.usefixtures('sl') # tests in this file use the SMRT Link "test client"
+
 def get_project_dicts():
     with open('tests/projects.json') as f:
         return json.load(f)
@@ -47,23 +49,6 @@ def db(db_projects):
         p.save(force_insert=True) # override query type UPDATE with INSERT
     yield
     db.close() # close the final connection to destroy the database
-
-@pytest.fixture(autouse=True)
-def sl():
-    '''
-    Hack to replace the SmrtLinkClient instance with the "test client".
-    '''
-    class SmrtLinkTestClient:
-        '''Mimic DnascSmrtLinkClient for more convenience in testing.'''
-        project_dicts = get_project_dicts()
-        def get_project_dict(self, id):
-            zero_based_id = id - 1
-            if zero_based_id < 0 or zero_based_id >= len(self.project_dicts):
-                return None
-            return self.project_dicts[zero_based_id]
-        def get_project_ids(self):
-            return [p_d['id'] for p_d in self.project_dicts]
-    smrtlink.DnascSmrtLinkClient._instance = SmrtLinkTestClient()
 
 @pytest.mark.db_offset()
 def test_offset(projects_f):
