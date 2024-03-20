@@ -76,5 +76,3 @@ class App(ThreadingHTTPServer):
 
     def stop(self):
         self.shutdown()
-
-# This is a test for branches
