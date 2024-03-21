@@ -8,11 +8,26 @@ if [ $? -ne 0 ]; then
 fi
 
 cd app_env
-wget https://github.com/PacificBiosciences/pbcore/releases/download/2.1.2/pbcore-2.1.2.tar.gz
 
-tar -xvzf pbcore-2.1.2.tar.gz
+BRANCH_NAME=develop # as of 03/21/24, this is the most up-to-date branch
+wget https://github.com/PacificBiosciences/pbcore/archive/refs/heads/${BRANCH_NAME}.zip
+if [ $? -ne 0 ]; then
+    echo "Failed to download pbcore package files."
+    exit 1
+fi
 
-bin/pip install -e pbcore-2.1.2
+unzip ${BRANCH_NAME}.zip
+
+# install required packages
+set -e # exit if any command fails
+bin/pip install -e pbcore-$BRANCH_NAME
 bin/pip install requests
 bin/pip install peewee
 bin/pip install globus-sdk
+
+# Check that the packages were installed
+pip_output=$(bin/pip list)
+grep -q "pbcore" <<< $pip_output
+grep -q "requests" <<< $pip_output
+grep -q "peewee" <<< $pip_output
+grep -q "globus-sdk" <<< $pip_output
