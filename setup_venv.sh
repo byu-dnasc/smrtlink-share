@@ -32,6 +32,7 @@ bin/pip install -e pbcore-$BRANCH_NAME
 bin/pip install requests
 bin/pip install peewee
 bin/pip install globus-sdk
+bin/pip install pytest
 
 # Check that the packages were installed
 pip_output=$(bin/pip list)
