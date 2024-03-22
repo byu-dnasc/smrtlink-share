@@ -1,3 +1,4 @@
+
 python3 -m venv app_env
 
 # Ubuntu may require a special package (like python3.10-venv)
@@ -16,10 +17,17 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Check if unzip is installed
+if ! command -v unzip &> /dev/null; then
+    echo "unzip is not installed"
+    exit 1
+fi
+
 unzip ${BRANCH_NAME}.zip
 
-# install required packages
 set -e # exit if any command fails
+
+# install required packages
 bin/pip install -e pbcore-$BRANCH_NAME
 bin/pip install requests
 bin/pip install peewee
