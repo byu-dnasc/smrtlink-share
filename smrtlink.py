@@ -1,5 +1,33 @@
 from requests import HTTPError
 from smrtlink_client import SmrtLinkClient
+from pbcore.io.dataset.DataSetIO import DataSet
+from pbcore.io.dataset.DataSetMembers import ExternalResource
+
+def get_file_path(res, file_paths):
+    if hasattr(res, 'resourceId'):
+        file_paths.append(res.resourceId)
+    if type(res) is ExternalResource: # else is FileIndex
+        if len(res.indices) > 0:
+            get_file_paths(res.indices, file_paths)
+        if len(res.externalResources) > 0:
+            get_file_paths(res.externalResources, file_paths)
+    return file_paths
+
+def get_file_paths(resources, file_paths):
+    for res in resources:
+        get_file_path(res, file_paths)
+    return file_paths
+
+class DataSetWrapper:
+    '''
+    XML Schema definitions found at https://github.com/PacificBiosciences/PacBioFileFormats 
+    - ExternalResources, SupplementalResources is found in PacBioBaseDataModel.xsd
+    - DataSet and derivative types are found in PacBioDatasets.xsd
+    '''
+    def __init__(self, xml_path):
+        ds = DataSet(xml_path)
+        self.primary_files = get_file_paths(ds.externalResources, [])
+        self.supplemental_files = get_file_paths(ds.supplementalResources, [])
 
 class DnascSmrtLinkClient(SmrtLinkClient):
 
