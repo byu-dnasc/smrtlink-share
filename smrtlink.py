@@ -1,33 +1,6 @@
 from requests import HTTPError
 from smrtlink_client import SmrtLinkClient
-from pbcore.io.dataset.DataSetIO import DataSet
-from pbcore.io.dataset.DataSetMembers import ExternalResource
-
-def get_file_path(res, file_paths):
-    if hasattr(res, 'resourceId'):
-        file_paths.append(res.resourceId)
-    if type(res) is ExternalResource: # else is FileIndex
-        if len(res.indices) > 0:
-            get_file_paths(res.indices, file_paths)
-        if len(res.externalResources) > 0:
-            get_file_paths(res.externalResources, file_paths)
-    return file_paths
-
-def get_file_paths(resources, file_paths):
-    for res in resources:
-        get_file_path(res, file_paths)
-    return file_paths
-
-class DataSetWrapper:
-    '''
-    XML Schema definitions found at https://github.com/PacificBiosciences/PacBioFileFormats 
-    - ExternalResources, SupplementalResources is found in PacBioBaseDataModel.xsd
-    - DataSet and derivative types are found in PacBioDatasets.xsd
-    '''
-    def __init__(self, xml_path):
-        ds = DataSet(xml_path)
-        self.primary_files = get_file_paths(ds.externalResources, [])
-        self.supplemental_files = get_file_paths(ds.supplementalResources, [])
+from dataset import DnascDataSet
 
 class DnascSmrtLinkClient(SmrtLinkClient):
 
@@ -48,12 +21,17 @@ class DnascSmrtLinkClient(SmrtLinkClient):
         return [dct['id'] for dct in lst]
     
     def get_dataset(self, uuid):
-        '''Returns a dictionary of dataset data, or None if not found.'''
-        try:
-            return self.get_consensusreadset(uuid)
-        except HTTPError as e:
-            assert e.response.status_code == 404, 'Unexpected error when getting dataset from SMRT Link'
+        '''
+        param uuid: The UUID of a dataset of any type
+        return: a DataSet object, or None if not found
+        '''
+        ds = self.get_dataset_search(uuid) # 404 safe
+        if ds is None:
             return None
+        num_children = 0
+        if hasattr(ds, 'numChildren'):
+            num_children = ds['numChildren']
+        return DnascDataSet(ds['uuid'], ds['path'], ds['name'], num_children)
     
     @staticmethod
     def connect():
