@@ -4,10 +4,25 @@ import os
 
 root = '/tmp/staging'
 
+def stage_dataset(dir, dataset):
+    if dataset.is_super: # type(files) is dict
+        for sample_dir_basename, filepaths in dataset.files.items():
+            sample_dir = os.path.join(dir, sample_dir_basename)
+            os.mkdir(sample_dir)
+            for filepath in filepaths:
+                os.link(filepath, os.path.join(sample_dir, os.path.basename(filepath)))
+    else: # type(files) is list
+        for filepath in dataset.files:
+            os.link(filepath, os.path.join(dir, os.path.basename(filepath)))
+
 def new(project_id):
     proj = project.get(project_id)
-    path = os.path.join(root, str(project_id), proj.name)
-    os.makedirs(path)
+    project_dir = os.path.join(root, str(project_id), proj.name)
+    os.makedirs(project_dir)
     for uuid in proj.datasets.split(', '):
-        dataset_dict = smrtlink.get_client().get_dataset(uuid)
-        os.makedirs(os.path.join(path, dataset_dict['name']))
+        dataset = smrtlink.get_client().get_dataset(uuid)
+        if not dataset:
+            continue
+        dataset_dir = os.path.join(project_dir, dataset.name)
+        os.mkdir(dataset_dir)
+        stage_dataset(dataset_dir, dataset)
