@@ -47,12 +47,12 @@ def get_transfer_client():
     authorizer = get_authorizer(ACL_CREATION_SCOPE)
     return globus_sdk.TransferClient(authorizer=authorizer)
 
-def add_acl_rule(transfer_client, rule_data):
+def add_acl_rule(transfer_client, user_id, project_path):
     rule_data = {
         "DATA_TYPE": "access",
         "principal_type": "identity",
-        "principal": IDENTITY_ID,
-        "path": "/ABHelix EXP23000689 CCS/",
+        "principal": user_id,
+        "path": project_path,
         "permissions": "r",
     }
     return transfer_client.add_endpoint_acl_rule(GUEST_COLLECTION_ID, rule_data)
