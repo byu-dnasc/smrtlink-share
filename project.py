@@ -12,6 +12,7 @@ class Project(pw.Model):
     createdAt = pw.CharField()
     updatedAt = pw.CharField()
     description = pw.CharField()
+    access_rule_ids = pw.CharField()
 
     def __str__(self):
         return str(self.name)
