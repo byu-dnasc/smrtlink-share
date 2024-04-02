@@ -3,9 +3,8 @@ import json
 import os
 
 class Constants:
-    CREDENTIALS_FILE_PATH = '/home/dnascapp/backend/credentials.json' 
+    CREDENTIALS_FILE_PATH = f'/home/{os.environ["USER"]}/smrtlink-share/credentials.json' 
     APP_CLIENT_UUID = '762432c3-3ff0-43cc-af07-1ccda52be14b'
-    SECRET = 'sGoJSFyxd/kZs74uddPPDuUo61f7Gv/PzrHGq5C8Res='
     visible_to_identities = [APP_CLIENT_UUID]
     VISIBLE_TO_URNS = [f'urn:globus:auth:identity:{i}' for i in visible_to_identities]
 
@@ -17,7 +16,7 @@ def _valid_credentials_file_accessible():
                'Globus Client Secret' in j:
                 return True
             else:
-                raise KeyError(f'{Constants.CREDENTIALS_FILE_PATH} missing key.')
+                raise KeyError(f'{Constants.CREDENTIALS_FILE_PATH} missing property.')
     else:
         raise Exception(f'{Constants.CREDENTIALS_FILE_PATH} does not exist.')
 
@@ -25,17 +24,17 @@ def _read_id_secret():
     try:
         _valid_credentials_file_accessible()
     except Exception as e:
-        print('Failed to access Globus index: ' + str(e))
+        print('Failed to get Globus client credentials: ' + str(e))
     with open(Constants.CREDENTIALS_FILE_PATH) as f:
         j = json.load(f)
         return j['Globus Client ID'], j['Globus Client Secret']
 
 def get_authorizer(scope):
-    # client_id, client_secret = _read_id_secret() # TODO use this way instead
+    client_id, client_secret = _read_id_secret()
     return globus_sdk.ClientCredentialsAuthorizer(
         globus_sdk.ConfidentialAppAuthClient(
-            Constants.APP_CLIENT_UUID,
-            Constants.SECRET
+            client_id,
+            client_secret
         ),
         scope
     )
