@@ -57,7 +57,10 @@ def add_acl_rule(user_id, project_path):
         "path": project_path,
         "permissions": "r",
     }
-    return transfer_client.add_endpoint_acl_rule(GUEST_COLLECTION_ID, rule_data)
+    try:
+        transfer_client.add_endpoint_acl_rule(GUEST_COLLECTION_ID, rule_data)
+    except:
+        pass # TODO Log the error
 
 def get_acl_rules():
     return transfer_client.endpoint_acl_list(GUEST_COLLECTION_ID)
