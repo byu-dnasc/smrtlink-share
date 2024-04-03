@@ -47,7 +47,9 @@ def get_transfer_client():
     authorizer = get_authorizer(ACL_CREATION_SCOPE)
     return globus_sdk.TransferClient(authorizer=authorizer)
 
-def add_acl_rule(transfer_client, user_id, project_path):
+transfer_client = get_transfer_client()
+
+def add_acl_rule(user_id, project_path):
     rule_data = {
         "DATA_TYPE": "access",
         "principal_type": "identity",
@@ -57,5 +59,11 @@ def add_acl_rule(transfer_client, user_id, project_path):
     }
     return transfer_client.add_endpoint_acl_rule(GUEST_COLLECTION_ID, rule_data)
 
-def get_acl_rules(transfer_client):
+def get_acl_rules():
     return transfer_client.endpoint_acl_list(GUEST_COLLECTION_ID)
+
+def delete_acl_rule(access_rule_id):
+    try:
+        transfer_client.delete_endpoint_acl_rule(GUEST_COLLECTION_ID, access_rule_id)
+    except globus_sdk.TransferAPIError:
+        pass # TODO Log the error
