@@ -12,7 +12,7 @@ def _dict_to_project(dct):
     '''
     members = [member['login'] for member in dct['members']]
     dct['members'] = ', '.join(members[1:]) # ignore the first member (project owner)
-    dct['datasets'] = [dataset['uuid'] for dataset in dct['datasets']]
+    dct['dataset_ids'] = [dataset['uuid'] for dataset in dct['datasets']]
     return Project(**dct)
 
 class DnascSmrtLinkClient(SmrtLinkClient):
@@ -34,30 +34,11 @@ class DnascSmrtLinkClient(SmrtLinkClient):
         return [dct['id'] for dct in lst]
     
     def get_project(self, id):
-        '''
-        Get a project from SMRT Link by id. This is and init_db are 
-        the only functions that should instantiate Project or modify
-        the peewee database (outside of testing).
-
-        Despite the unassuming name, this function has a lot of responsibilities.
-        1. Get a project from SMRT Link
-        2. Instantiate Project using the data from SMRT Link
-        3. Compare this up-to-date data with the database
-        4. Record any differences in the Project instance
-        5. Update the database with the up-to-date project's data
-        6. Return the Project instance
-        '''
-        # 1.
+        '''Get a project from SMRT Link by id.'''
         project_dict = self._get_project_dict(id)
-        if not project_dict:
-            return None
-        # Instantiate Project using the data from SMRT Link
-        sl_project = _dict_to_project(project_dict)
-        # Compare this up-to-date data with the database
-        db_project = Project.get_or_none(Project.id == sl_project.id)
-        sl_project.dataset_ids
-        sl_project.update_db()
-        return sl_project
+        if project_dict:
+            return _dict_to_project(project_dict)
+        return None
 
     def get_new_project(self):
         db_ids = Project.select(Project.id)
