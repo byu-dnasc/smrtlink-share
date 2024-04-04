@@ -1,6 +1,8 @@
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from time import sleep
 import project
+import smrtlink
+import staging
 
 def _get_project_id(uri):
     project_id = uri.split('/')[-1]
@@ -52,9 +54,8 @@ def _handler_with_logger(logger):
         def do_POST(self):
             self._respond_log_wait()
             try:
-                new_project = project.get_new()
-                # TODO: stage project
-                new_project.save(force_insert=True)
+                project = smrtlink.get_new_project()
+                staging.new(project)
             except project.OutOfSyncError:
                 pass
 
