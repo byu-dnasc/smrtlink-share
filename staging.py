@@ -1,4 +1,3 @@
-import project
 import smrtlink
 import os
 
@@ -15,11 +14,10 @@ def stage_dataset(dir, dataset):
         for filepath in dataset.files:
             os.link(filepath, os.path.join(dir, os.path.basename(filepath)))
 
-def new(project_id):
-    proj = project.get(project_id)
-    project_dir = os.path.join(root, str(project_id), proj.name)
+def new(project):
+    project_dir = os.path.join(root, str(project.id), project.name)
     os.makedirs(project_dir)
-    for uuid in proj.datasets.split(', '):
+    for uuid in project.dataset_ids:
         dataset = smrtlink.get_client().get_dataset(uuid)
         if not dataset:
             continue
