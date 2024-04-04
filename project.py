@@ -53,25 +53,25 @@ class Project(pw.Model):
         external instance is populated with data from SMRT Link.
 
         :param kwargs: when using init directly (as in `smrtlink._dict_to_project`),
-        kwargs is a dictionary of project data from SMRT Link which includes a
-        list of dataset ids under the key 'datasets'.
+        `kwargs` is a dictionary of project data from SMRT Link, as well as a list 
+        of dataset ids under the key 'dataset_ids'.
         '''
-        if 'datasets' in kwargs: # external instance
-            self.dataset_ids = kwargs.pop('datasets')
-            super().__init__(*args, **kwargs) # populate instance with SMRT Link data in kwargs
+        if 'dataset_ids' in kwargs: # external instance
+            # initialize instance data
+            self.dataset_ids = kwargs.pop('dataset_ids')
+            super().__init__(*args, **kwargs) # pass SMRT Link data to super
+            # optionally, get updates using database
             db_project = Project.get_or_none(Project.id == self.id)
             if db_project:
                 self.updates = self._get_updates(db_project)
+            # update database with SMRT Link data
+            self.save(force_insert=True)
+            Dataset.bulk_create([Dataset(id=uuid, project=self) for uuid in self.dataset_ids])
         else: # internal instance
             super().__init__(*args, **kwargs) # populate instance with database data in kwargs
                                               # and generate self._datasets from backref
             assert hasattr(self, '_datasets'), 'Dataset foreign key backref not found'
             self.dataset_ids = [str(ds.id) for ds in self._datasets]
-    
-    def update_db(self):
-        '''Update the database with the project's data.'''
-        self.save(force_insert=True) # override query type UPDATE with INSERT
-        Dataset.bulk_create([Dataset(id=uuid, project=self) for uuid in self.dataset_ids])
     
     def __str__(self):
         return str(self.name)
