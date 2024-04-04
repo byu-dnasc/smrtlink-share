@@ -38,16 +38,19 @@ class Project(pw.Model):
         There are two types of `Project` instances, internal and external,
         whose initialization is handled respectively by one or the other
         of the two branches of this method.
-        Both types of instances have an attribute for each of the `peewee` 
+        Both types of instances have a variable for each of the `peewee` 
         'fields'. These are initialized by `super().__init__()`. Both types of 
         instances also have a list of dataset ids, initialized by this method.
-        The 'internal' type of instance has only the attributes mentioned above
-        and should only be used within the class.
-        The 'external' type of instance has at least one more attribute called
-        `is_new`, which is true if the instance is not found in the database. 
-        If `is_new` is False, then the instance will also have `updates`,
-        which is a list of field names that have changed since the last time 
-        the app checked SMRT Link for updates.
+        The 'internal' type of instance has only the variables mentioned above
+        and should only be used within `Project`.
+        The 'external' type of instance has one more optional variable called
+        `updates`, which is a list of field names that have changed since the 
+        last time the app checked SMRT Link for updates. If the project is new
+        (i.e., it does not exist in the database), then `updates` is omitted.
+
+        Another key difference between the two types of instances is that the
+        internal instance is populated with data from the database, while the
+        external instance is populated with data from SMRT Link.
 
         :param kwargs: when using init directly (as in `smrtlink._dict_to_project`),
         kwargs is a dictionary of project data from SMRT Link which includes a
@@ -55,15 +58,12 @@ class Project(pw.Model):
         '''
         if 'datasets' in kwargs: # external instance
             self.dataset_ids = kwargs.pop('datasets')
-            super().__init__(*args, **kwargs) # populate instance with SMRT Link data
+            super().__init__(*args, **kwargs) # populate instance with SMRT Link data in kwargs
             db_project = Project.get_or_none(Project.id == self.id)
             if db_project:
-                self.is_new = False
                 self.updates = self._get_updates(db_project)
-            else:
-                self.is_new = True
         else: # internal instance
-            super().__init__(*args, **kwargs) # populate instance with database data 
+            super().__init__(*args, **kwargs) # populate instance with database data in kwargs
                                               # and generate self._datasets from backref
             assert hasattr(self, '_datasets'), 'Dataset foreign key backref not found'
             self.dataset_ids = [str(ds.id) for ds in self._datasets]
