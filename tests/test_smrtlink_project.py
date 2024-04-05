@@ -43,7 +43,7 @@ def db(db_projects):
     '''
     db = pw.SqliteDatabase(':memory:')
     project.Project.bind(db)
-    project.Dataset.bind(db)
+    project.DatasetId.bind(db)
     db.connect() # open a connection so that the in-memory database stays alive
     db.create_tables([project.Project], safe=True)
     for p in db_projects:
@@ -85,4 +85,4 @@ def test_get_new_out_of_sync():
         project.get_new()
 
 def test_dataset_table():
-    assert project.Dataset.table_exists()
+    assert project.DatasetId.table_exists()

@@ -12,9 +12,9 @@ def db():
     '''
     db = pw.SqliteDatabase(':memory:')
     project.Project.bind(db)
-    project.Dataset.bind(db)
+    project.DatasetId.bind(db)
     db.connect() # open a connection so that the in-memory database stays alive
-    db.create_tables([project.Project, project.Dataset], safe=True)
+    db.create_tables([project.Project, project.DatasetId], safe=True)
     yield
     db.close() # close the final connection to destroy the database
 

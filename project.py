@@ -66,7 +66,7 @@ class Project(pw.Model):
                 self.updates = self._get_updates(db_project)
             # update database with SMRT Link data
             self.save(force_insert=True)
-            Dataset.bulk_create([Dataset(id=uuid, project=self) for uuid in self.dataset_ids])
+            DatasetId.bulk_create([DatasetId(id=uuid, project=self) for uuid in self.dataset_ids])
         else: # internal instance
             super().__init__(*args, **kwargs) # populate instance with database data in kwargs
                                               # and generate self._datasets from backref
@@ -76,7 +76,7 @@ class Project(pw.Model):
     def __str__(self):
         return str(self.name)
 
-class Dataset(pw.Model):
+class DatasetId(pw.Model):
     '''Do not instantiate outside of `Project`.'''
     id = pw.UUIDField(primary_key=True)
     project = pw.ForeignKeyField(Project, backref='_datasets')
@@ -84,7 +84,7 @@ class Dataset(pw.Model):
 def init_db(db_file):
     db = pw.SqliteDatabase(db_file)
     Project.bind(db)
-    Dataset.bind(db)
+    DatasetId.bind(db)
     with db:
-        db.create_tables([Project, Dataset], safe=True)
+        db.create_tables([Project, DatasetId], safe=True)
     return db
