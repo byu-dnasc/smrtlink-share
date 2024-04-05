@@ -23,6 +23,7 @@ class Project(pw.Model):
     createdAt = pw.CharField()
     updatedAt = pw.CharField()
     description = pw.CharField()
+    access_rule_ids = pw.CharField()
 
     def _get_updates(self, db_project):
         '''Identify changes between the instance and the database.'''
