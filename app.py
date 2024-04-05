@@ -1,6 +1,7 @@
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from time import sleep
 import project
+import globus
 
 def _get_project_id(uri):
     project_id = uri.split('/')[-1]
@@ -44,6 +45,10 @@ def _handler_with_logger(logger):
             self.wfile.write(b'smrtlink-share app is online')
 
         def do_PUT(self):
+            '''
+            Anything may need to be modified, including
+            files, directory names, and access rules
+            '''
             self._respond_log_wait()
             project_id = _get_project_id(self.path)
             if project_id:
@@ -63,6 +68,9 @@ def _handler_with_logger(logger):
             project_id = _get_project_id(self.path)
             if project_id:
                 pass
+            access_rule_ids = globus.get_project_access_rule_ids(project_id)
+            for rule_id in access_rule_ids:
+                globus.delete_acl_rule(rule_id)
 
     return Dispatcher
 
