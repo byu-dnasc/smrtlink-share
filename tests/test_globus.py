@@ -18,3 +18,7 @@ def test_add_acl_rule():
     rule_id = globus.add_acl_rule(user_id, project_path)
     
     globus.delete_acl_rule(rule_id)
+
+# look up an access rule by id
+def test_get_acl_rule():
+    print(globus.get_acl_rules())
