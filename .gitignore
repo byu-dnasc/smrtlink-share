@@ -2,3 +2,5 @@
 *pyc
 *.log
 *.db
+app_env/
+credentials.json
