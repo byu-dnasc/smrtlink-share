@@ -68,8 +68,7 @@ def _handler_with_logger(logger):
             project_id = _get_project_id(self.path)
             if project_id:
                 pass
-            access_rule_ids = globus.get_project_access_rule_ids(project_id)
-            for rule_id in access_rule_ids:
+            for rule_id in globus.get_project_access_rule_ids(project_id):
                 globus.delete_acl_rule(rule_id)
 
     return Dispatcher
