@@ -1,4 +1,3 @@
-
 python3 -m venv app_env
 
 # Ubuntu may require a special package (like python3.10-venv)
@@ -33,6 +32,7 @@ bin/pip install requests
 bin/pip install peewee
 bin/pip install globus-sdk
 bin/pip install pytest
+bin/pip install python-dotenv
 
 # Check that the packages were installed
 pip_output=$(bin/pip list)
@@ -40,3 +40,7 @@ grep -q "pbcore" <<< $pip_output
 grep -q "requests" <<< $pip_output
 grep -q "peewee" <<< $pip_output
 grep -q "globus-sdk" <<< $pip_output
+grep -q "pytest" <<< $pip_output
+grep -q "python-dotenv" <<< $pip_output
+
+echo "source .env" >> bin/activate
