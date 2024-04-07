@@ -1,11 +1,6 @@
 import globus_sdk
-import os
 import peewee as pw
-
-def get_env_var(var):
-    if var not in os.environ:
-        raise KeyError(f'{var} not found in environment variables')
-    return os.environ[var]
+from app import get_env_var
 
 CLIENT_ID = get_env_var('GLOBUS_CLIENT_ID')
 CLIENT_SECRET = get_env_var('GLOBUS_CLIENT_SECRET')
@@ -23,15 +18,14 @@ def get_authorizer(scope):
         scope
     )
 
-def get_transfer_client():
+def _get_transfer_client():
     try:
         authorizer = get_authorizer(ACL_CREATION_SCOPE)
         return globus_sdk.TransferClient(authorizer=authorizer)
-    except globus_sdk.AuthAPIError as e:
-        print('Failed to get TransferClient: ' + str(e))
+    except Exception as e:
         return None
 
-transfer_client = get_transfer_client()
+transfer_client = _get_transfer_client()
 
 def add_acl_rule(user_id, project_path, project_id):
     rule_data = {
