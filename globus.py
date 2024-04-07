@@ -25,7 +25,7 @@ def _get_transfer_client():
     except Exception as e:
         return None
 
-transfer_client = _get_transfer_client()
+TRANSFER_CLIENT = _get_transfer_client()
 
 def add_acl_rule(user_id, project_path, project_id):
     rule_data = {
@@ -36,7 +36,7 @@ def add_acl_rule(user_id, project_path, project_id):
         "permissions": "r",
     }
     try:
-        rule_id = transfer_client.add_endpoint_acl_rule(COLLECTION_ID, rule_data)
+        rule_id = TRANSFER_CLIENT.add_endpoint_acl_rule(COLLECTION_ID, rule_data)
         AccessRuleId.create(rule_id=rule_id, project_id=project_id)
     except globus_sdk.TransferAPIError as e:
         pass # TODO Log the error
@@ -44,7 +44,7 @@ def add_acl_rule(user_id, project_path, project_id):
         pass # TODO Log the error
 
 def get_acl_rules():
-    return transfer_client.endpoint_acl_list(COLLECTION_ID)
+    return TRANSFER_CLIENT.endpoint_acl_list(COLLECTION_ID)
 
 def delete_acl_rule(access_rule_id):
     '''
@@ -52,7 +52,7 @@ def delete_acl_rule(access_rule_id):
     Use case 2: access rule is too old (get rule id directly from Globus)
     '''
     try:
-        transfer_client.delete_endpoint_acl_rule(COLLECTION_ID, access_rule_id)
+        TRANSFER_CLIENT.delete_endpoint_acl_rule(COLLECTION_ID, access_rule_id)
     except globus_sdk.TransferAPIError:
         pass # TODO Log the error
 
