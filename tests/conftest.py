@@ -1,6 +1,9 @@
 import pytest
 import json
+import os
 import smrtlink
+
+os.environ['GLOBUS_COLLECTION_ID'] = 'test_collection_id'
 
 def get_project_dicts():
     with open('tests/projects.json') as f:
@@ -30,5 +33,5 @@ def sl():
             if uuid in self.dataset_dict.keys():
                 return self.dataset_dict[uuid]
             return None
-    smrtlink.DnascSmrtLinkClient._instance = SmrtLinkTestClient()
+    smrtlink.CLIENT = SmrtLinkTestClient()
 
