@@ -6,8 +6,6 @@ CLIENT_ID = get_env_var('GLOBUS_CLIENT_ID')
 CLIENT_SECRET = get_env_var('GLOBUS_CLIENT_SECRET')
 COLLECTION_ID = get_env_var('GLOBUS_COLLECTION_ID')
 ACL_CREATION_SCOPE='urn:globus:auth:scope:transfer.api.globus.org:all'
-visible_to_identities = [CLIENT_ID]
-VISIBLE_TO_URNS = [f'urn:globus:auth:identity:{i}' for i in visible_to_identities]
 
 def get_authorizer(scope):
     return globus_sdk.ClientCredentialsAuthorizer(
