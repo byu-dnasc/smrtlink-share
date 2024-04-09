@@ -23,7 +23,6 @@ class Project(pw.Model):
     createdAt = pw.CharField()
     updatedAt = pw.CharField()
     description = pw.CharField()
-    access_rule_ids = pw.CharField()
 
     def _get_updates(self, db_project):
         '''Identify changes between the instance and the database.'''
@@ -81,11 +80,3 @@ class DatasetId(pw.Model):
     '''Do not instantiate outside of `Project`.'''
     id = pw.UUIDField(primary_key=True)
     project = pw.ForeignKeyField(Project, backref='_datasets')
-
-def init_db(db_file):
-    db = pw.SqliteDatabase(db_file)
-    Project.bind(db)
-    DatasetId.bind(db)
-    with db:
-        db.create_tables([Project, DatasetId], safe=True)
-    return db
