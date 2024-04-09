@@ -4,7 +4,7 @@ import logging
 import threading
 import os
 
-from app import App
+from app.server import App
 
 log_file = f'{os.path.dirname(__file__)}/app_request.log'
 logging.basicConfig(filename=log_file, level=logging.INFO, force=True)

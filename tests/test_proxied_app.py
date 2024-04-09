@@ -4,7 +4,7 @@ import logging
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from app import App
+from app.server import App
 
 log_file = 'tests/proxy_request.log'
 logging.basicConfig(filename=log_file, level=logging.INFO)

@@ -1,5 +1,5 @@
 import pytest
-import globus
+import app.globus as globus
 import peewee as pw
 
 IDENTITY_ID = "19ff6717-c44d-4ab4-983c-1eb2095beba4" # aknaupp@byu.edu

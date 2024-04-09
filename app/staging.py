@@ -1,4 +1,4 @@
-import smrtlink
+import app.smrtlink as smrtlink
 import os
 
 root = '/tmp/staging'

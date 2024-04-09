@@ -1,8 +1,8 @@
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from time import sleep
-import smrtlink
-import staging
-import globus
+import app.smrtlink as smrtlink
+import app.staging as staging
+import app.globus as globus
 import os
 
 class EnvVarNotFoundError(Exception):

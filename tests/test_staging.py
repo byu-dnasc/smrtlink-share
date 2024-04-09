@@ -1,8 +1,8 @@
-import staging
+import app.staging as staging
 import shutil
 import pytest
 import os
-import smrtlink
+import app.smrtlink as smrtlink
 
 
 pytestmark = pytest.mark.usefixtures('sl') # tests in this file use the SMRT Link "test client"

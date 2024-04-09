@@ -1,8 +1,8 @@
 import pytest
 from tests.conftest import get_project_dicts
-from smrtlink import _dict_to_project
+from app.smrtlink import _dict_to_project
 import peewee as pw
-import project
+import app.project as project
 
 @pytest.fixture(autouse=True)
 def db():

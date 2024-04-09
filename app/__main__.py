@@ -1,6 +1,6 @@
 import logging
 
-from app import App
+from app.server import App
 
 logging.basicConfig(filename='request.log', level=logging.INFO)
 

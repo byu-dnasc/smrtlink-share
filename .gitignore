@@ -1,5 +1,5 @@
 *cache*
-*pyc
+__pycache__
 *.log
 *.db
 app_env/

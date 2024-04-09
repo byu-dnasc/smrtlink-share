@@ -1,5 +1,5 @@
 import os
-import dataset
+import app.dataset as dataset
 
 def test_pbcore_dataset():
     username = os.environ.get('USER')

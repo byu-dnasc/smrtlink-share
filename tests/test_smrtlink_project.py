@@ -1,8 +1,8 @@
 import json
 import pytest
 import peewee as pw
-import project
-import smrtlink
+import app.project as project
+import app.smrtlink as smrtlink
 
 pytestmark = pytest.mark.usefixtures('sl') # tests in this file use the SMRT Link "test client"
 

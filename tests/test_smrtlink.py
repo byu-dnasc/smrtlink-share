@@ -1,7 +1,7 @@
 import pytest
-import project
+import app.project as project
 import peewee as pw
-import smrtlink
+import app.smrtlink as smrtlink
 
 @pytest.fixture(autouse=True)
 def db():

@@ -1,7 +1,7 @@
 import pytest
 import json
 import os
-import smrtlink
+import app.smrtlink as smrtlink
 
 os.environ['GLOBUS_COLLECTION_ID'] = 'test_collection_id'
 
