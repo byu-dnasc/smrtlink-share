@@ -1,6 +1,6 @@
 import globus_sdk
 import peewee as pw
-from app.server import get_env_var
+from app import get_env_var
 
 CLIENT_ID = get_env_var('GLOBUS_CLIENT_ID')
 CLIENT_SECRET = get_env_var('GLOBUS_CLIENT_SECRET')
