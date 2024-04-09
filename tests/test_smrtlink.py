@@ -1,17 +1,5 @@
-import pytest
 import app.project as project
-import peewee as pw
 import app.smrtlink as smrtlink
-
-@pytest.fixture(autouse=True)
-def db():
-    '''Adapt functionality in project.init_db() for using an in-memory database'''
-    db = pw.SqliteDatabase(':memory:')
-    project.Project.bind(db)
-    db.connect() # open a connection so that the in-memory database stays alive
-    db.create_tables([project.Project], safe=True)
-    yield
-    db.close()
 
 def test_sl_client_connect():
     '''Test should fail if SMRT Link is not running on localhost:8243 or if credentials are wrong'''
