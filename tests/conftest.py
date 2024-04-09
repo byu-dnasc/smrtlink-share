@@ -1,12 +1,27 @@
 import pytest
 import json
 import os
+import peewee as pw
+from app.project import Project, DatasetId
+
+# Configure environment variables
 import dotenv
 dotenv.load_dotenv()
-
-import app.smrtlink as smrtlink
-
 os.environ['GLOBUS_COLLECTION_ID'] = 'test_collection_id'
+
+# import modules that rely on environment variables
+import app.smrtlink as smrtlink
+from app.globus import AccessRuleId
+
+@pytest.fixture(autouse=True)
+def init_db():
+    db = pw.SqliteDatabase(':memory:')
+    Project.bind(db)
+    DatasetId.bind(db)
+    AccessRuleId.bind(db)
+    db.create_tables([Project, DatasetId, AccessRuleId], safe=True)
+    yield
+    db.close()
 
 def get_project_dicts():
     with open('tests/projects.json') as f:
