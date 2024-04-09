@@ -1,6 +1,9 @@
 import pytest
 import json
 import os
+import dotenv
+dotenv.load_dotenv()
+
 import app.smrtlink as smrtlink
 
 os.environ['GLOBUS_COLLECTION_ID'] = 'test_collection_id'
