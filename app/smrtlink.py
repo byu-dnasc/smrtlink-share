@@ -2,7 +2,7 @@ from requests import HTTPError
 from app.project import Project
 from app.smrtlink_client import SmrtLinkClient
 from app.dataset import DnascDataSet
-from app.server import get_env_var, OutOfSyncError
+from app import get_env_var, OutOfSyncError
 
 def _dict_to_project(dct):
     '''

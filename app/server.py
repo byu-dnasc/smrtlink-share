@@ -3,18 +3,6 @@ from time import sleep
 import app.smrtlink as smrtlink
 import app.staging as staging
 import app.globus as globus
-import os
-
-class EnvVarNotFoundError(Exception):
-    pass
-
-class OutOfSyncError(Exception):
-    pass
-
-def get_env_var(var):
-    if var not in os.environ:
-        raise EnvVarNotFoundError(f'{var} not found in environment variables')
-    return os.environ[var]
 
 def _get_project_id(uri):
     project_id = uri.split('/')[-1]
