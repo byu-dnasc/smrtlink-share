@@ -25,3 +25,19 @@ def new(project):
         dataset_dir = join(project_dir, dataset.name)
         mkdir(dataset_dir)
         stage_dataset(dataset_dir, dataset)
+
+def update(project):
+    project_path = join(root, project.id, project.name)
+    if 'name' in project.updates:
+        # change project directory name
+        new_project_path = join(dirname(project_path), project.name)
+        rename(project_path, )
+    if 'dataset_ids' in project.updates:
+        pass # compare staged datasets to project datasets
+        project_path = join(project_path, project.name)
+        listdir(project_path)
+        project.new_datasets
+        project.delete_datasets
+    if 'members' in project.updates:
+        pass # compare ?
+        # adding or removing access rules
