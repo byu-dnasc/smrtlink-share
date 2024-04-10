@@ -36,7 +36,7 @@ def update(project):
     if 'name' in project.updates:
         # change project directory name
         new_project_path = join(dirname(project_path), project.name)
-        rename(project_path, )
+        rename(project_path, new_project_path)
     if 'dataset_ids' in project.updates:
         pass # compare staged datasets to project datasets
         updated_dataset_names = [smrtlink.get_client().get_dataset(uuid) for uuid in project.dataset_ids]
