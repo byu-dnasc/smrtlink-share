@@ -9,9 +9,15 @@ def _dict_to_project(dct):
     Adapt data obtained from SMRT Link to populate a Project object.
     '''
     members = [member['login'] for member in dct['members']]
-    dct['members'] = ', '.join(members[1:]) # ignore the first member (project owner)
-    dct['dataset_ids'] = [dataset['uuid'] for dataset in dct['datasets']]
-    return Project(**dct)
+    dataset_keys = ['uuid', 'path', 'name', 'numChildren']
+    project_data = {
+        'id': dct['id'],
+        'name': dct['name'],
+        'members': ', '.join(members[1:]), # ignore the first member (project owner)
+        'description': dct['description'],
+        'datasets': [{key: ds[key] for key in dataset_keys} for ds in dct['datasets']]
+    }
+    return Project(**project_data)
 
 class DnascSmrtLinkClient(SmrtLinkClient):
 
