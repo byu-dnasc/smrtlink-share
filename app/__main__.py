@@ -1,14 +1,18 @@
 import logging
 import os
-import peewee as pw
+import grp
 import dotenv
-dotenv.load_dotenv()
+import peewee as pw
+
+from app.project import Project
+from app import get_env_var, EnvVarNotFoundError
 
 # report and exit if any environment variables are missing
-from app import EnvVarNotFoundError
+dotenv.load_dotenv()
 try:
     import app.smrtlink as smrtlink
-    import app.globus as globus
+    from app.globus import AccessRuleId
+    get_env_var('GROUP_NAME')
 except EnvVarNotFoundError as e:
     print(e)
     exit(1)
@@ -22,18 +26,28 @@ if globus.TRANSFER_CLIENT is None:
     exit(1)
 
 # initialize and bind database to models
-from app.project import Project, DatasetId
-from app.globus import AccessRuleId
-
 try:
     db = pw.SqliteDatabase(os.environ['DB_PATH'])
 except Exception as e:
     print(f"Failed to initialize database: {e}")
     exit(1)
 Project.bind(db)
-DatasetId.bind(db)
 AccessRuleId.bind(db)
-db.create_tables([Project, DatasetId, AccessRuleId], safe=True)
+db.create_tables([Project, AccessRuleId], safe=True)
+
+# check that the app is running as the correct group
+group_name = get_env_var('GROUP_NAME')
+try:
+    gid = grp.getgrnam(group_name).gr_gid
+except KeyError:
+    print(f"Group '{group_name}' not found")
+    exit(1)
+if gid != os.getgid():
+    print(f"App must be run as group '{group_name}'")
+    exit(1)
+
+# set umask to 0 to give full permissions to group
+os.umask(0)
 
 # initialize and run the app
 from app.server import App
