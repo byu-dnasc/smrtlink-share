@@ -25,7 +25,7 @@ def _get_transfer_client():
 
 TRANSFER_CLIENT = _get_transfer_client()
 
-def add_acl_rule(user_id, project_path, project_id):
+def add_access_rule(user_id, project_path, project_id):
     rule_data = {
         "DATA_TYPE": "access",
         "principal_type": "identity",
@@ -35,16 +35,20 @@ def add_acl_rule(user_id, project_path, project_id):
     }
     try:
         rule_id = TRANSFER_CLIENT.add_endpoint_acl_rule(COLLECTION_ID, rule_data)
-        AccessRuleId.create(rule_id=rule_id, project_id=project_id)
+        AccessRuleId.create(
+                rule_id=rule_id, 
+                project_id=project_id, 
+                globus_user_id=user_id
+            )
     except globus_sdk.TransferAPIError as e:
         pass # TODO Log the error
     except pw.OperationalError as e:
         pass # TODO Log the error
 
-def get_acl_rules():
+def get_access_rules():
     return TRANSFER_CLIENT.endpoint_acl_list(COLLECTION_ID)
 
-def delete_acl_rule(access_rule_id):
+def _delete_access_rule(access_rule_id):
     '''
     Use case 1: receive request to delete a project (get rule id from database)
     Use case 2: access rule is too old (get rule id directly from Globus)
@@ -54,9 +58,19 @@ def delete_acl_rule(access_rule_id):
     except globus_sdk.TransferAPIError:
         pass # TODO Log the error
 
+def _get_access_rule_id(user_id, project_id):
+    return (AccessRuleId.select()
+                .where(AccessRuleId.project_id == project_id)
+                .where(AccessRuleId.globus_user_id == user_id))
+
+def delete_access_rule(user_id, project_id):
+    rule_id = _get_access_rule_id(user_id, project_id)
+    _delete_access_rule(rule_id)
+
 class AccessRuleId(pw.Model):
     rule_id = pw.CharField(primary_key=True)
     project_id = pw.IntegerField()
+    globus_user_id = pw.CharField()
 
 def get_project_access_rule_ids(project_id):
     ids = AccessRuleId.select().where(AccessRuleId.project_id == project_id)
