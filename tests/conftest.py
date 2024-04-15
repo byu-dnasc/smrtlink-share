@@ -1,7 +1,7 @@
 import pytest
 import os
 import peewee as pw
-from app.project import Project, ProjectDataset, Dataset
+from app.project import Project, ProjectDataset, ProjectMember
 
 # Configure environment variables
 import dotenv
@@ -17,9 +17,9 @@ def init_db():
     db = pw.SqliteDatabase(':memory:')
     Project.bind(db)
     ProjectDataset.bind(db)
-    Dataset.bind(db)
+    ProjectMember.bind(db)
     AccessRuleId.bind(db)
-    db.create_tables([Project, ProjectDataset, Dataset, AccessRuleId], safe=True)
+    db.create_tables([Project, ProjectDataset, ProjectMember, AccessRuleId], safe=True)
     yield
     db.close()
 
