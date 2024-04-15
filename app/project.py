@@ -14,25 +14,57 @@ class Project(pw.Model):
     Therefore, data found in this class only ever flows in one direction:
     SMRT Link -> `Project` instance -> Database
     '''
-    # camel case for convenience in converting from SMRT Link representation
     id = pw.IntegerField(primary_key=True)
     name = pw.CharField()
-    # state = pw.CharField()
-    members = pw.CharField()
-    # isActive = pw.BooleanField()
-    # createdAt = pw.CharField()
-    # updatedAt = pw.CharField()
-    description = pw.CharField()
 
     def _get_updates(self, db_project):
         '''Identify changes between the instance and the database.'''
-        updates = []
-        for property in list(self._meta.fields):
-            if getattr(self, property) != getattr(db_project, property):
-                updates.append(property)
-        if set(self._dataset_ids) != set(db_project._dataset_ids):
-            updates.append('datasets')
-        return updates
+        if self.name != db_project.name:
+            self.rename = True
+        current_ids = {ds.uuid for ds in self.datasets}
+        stale_ids = set(db_project._dataset_ids)
+        if current_ids - stale_ids:
+            self.datasets_to_add = list(current_ids - stale_ids)
+        if stale_ids - current_ids:
+            self.datasets_to_remove = list(stale_ids - current_ids)
+        current_members = set(self.members)
+        stale_members = set(db_project._members)
+        if current_members - stale_members:
+            self.members_to_add = list(current_members - stale_members)
+        if stale_members - current_members:
+            self.members_to_remove = list(stale_members - current_members)
+
+    def _update_db(self):
+        '''Add or remove datasets and members from the database.'''
+        self.save() # update project name
+        if hasattr(self, 'datasets_to_add'):
+            for uuid in self.datasets_to_add:
+                ProjectDataset.insert(project_id=self.id, dataset_id=uuid).execute()
+        if hasattr(self, 'datasets_to_remove'):
+            (ProjectDataset.delete()
+                            .where(ProjectDataset.project_id == self.id,
+                                   ProjectDataset.dataset_id.in_(self.datasets_to_remove))
+                            .execute())
+        if hasattr(self, 'members_to_add'):
+            for member in self.members_to_add:
+                ProjectMember.insert(project_id=self.id, member_id=member).execute()
+        if hasattr(self, 'members_to_remove'):
+            (ProjectMember.delete()
+                           .where(ProjectMember.project_id == self.id,
+                                  ProjectMember.member_id.in_(self.members_to_remove))
+                           .execute())
+    
+    def _insert_db(self):
+        '''Insert a new project into the database.'''
+        self.save(force_insert=True)
+        dataset_rows = [{'project_id': self.id, 
+                         'dataset_id': ds.uuid} 
+                         for ds in self.datasets]
+        ProjectDataset.insert_many(dataset_rows).execute()
+        member_rows = [{'project_id': self.id,
+                        'member_id': member} 
+                        for member in self.members]
+        ProjectMember.insert_many(member_rows).execute()
 
     def __init__(self, *args, **kwargs):
         '''
@@ -60,56 +92,47 @@ class Project(pw.Model):
         `kwargs` is a dictionary of project data from SMRT Link, as well as a list 
         of dataset ids under the key 'dataset_ids'.
         '''
-        if 'datasets' in kwargs: # external instance
+        if kwargs: # external instance
             # initialize instance data
-            self._datasets = kwargs.pop('datasets')
-            self._dataset_ids = [dct['uuid'] for dct in self._datasets] # for comparison with database (internal) instance
             super().__init__(*args, **kwargs)
-            # optionally, get updates using database
+            self.datasets = [Dataset(**dct) 
+                             for dct in kwargs['datasets']]
+            self.members = [member['login'] 
+                            for member in kwargs['members'] 
+                            if member['role'] != 'OWNER']
+            # compare instance data with database data
             db_project = Project.get_or_none(Project.id == self.id)
-            if db_project:
-                self.updates = self._get_updates(db_project)
-            # update database with SMRT Link data. use insert query if project is new.
-            project_is_new = False if db_project else True
-            self.save(force_insert=project_is_new)
-            for dct in self._datasets:
-                (ProjectDataset.insert(project_id=self.id, dataset_id=dct['uuid'])
-                               .on_conflict_ignore() # ignore error if this row already exists
-                               .execute())
-                (Dataset.insert(**dct)
-                        .on_conflict_ignore() # ignore error if this row already exists
-                        .execute())
+            if db_project: # get updates using database
+                self._get_updates(db_project)
+                self._update_db()
+            else: # load new project data into database
+                self._insert_db()
         else: # internal instance
             super().__init__(*args, **kwargs) # populate instance with database data in kwargs
             assert hasattr(self, '_dataset_id_refs'), 'ProjectDataset foreign key backref not found'
+            assert hasattr(self, '_member_refs'), 'ProjectMember foreign key backref not found'
             self._dataset_ids = [str(ref.dataset_id) for ref in self._dataset_id_refs]
-
-    @property
-    def datasets(self):
-        return (Dataset
-                .select()
-                .join(ProjectDataset)
-                .join(Project)
-                .where(Project.id == self.id))
-
-    def __str__(self):
-        return str(self.name)
-
-class Dataset(pw.Model):
-    '''In SMRT Link, all fields use here are immutable.'''
-    # camel case for convenience in converting from SMRT Link representation
-    uuid = pw.UUIDField(primary_key=True)
-    name = pw.CharField()
-    path = pw.CharField()
-    numChildren = pw.IntegerField()
-
-    def __str__(self):
-        return str(self.name)
+            self._members = [str(ref.member_id) for ref in self._member_id_refs]
     
-    def __repr__(self) -> str:
-        return self.uuid
+    def __str__(self):
+        return str(self.name)
+
+class Dataset:
+    def __init__(self, **kwargs):
+        self.uuid = kwargs['uuid']
+        self.name = kwargs['name']
+        self.path = kwargs['path']
+        self.num_children = kwargs['numChildren']
+
+    def __str__(self):
+        return str(self.name)
 
 class ProjectDataset(pw.Model):
     '''Do not instantiate outside of `Project`.'''
-    project = pw.ForeignKeyField(Project, backref='_dataset_id_refs')
-    dataset = pw.ForeignKeyField(Dataset)
+    project_id = pw.ForeignKeyField(Project, backref='_dataset_id_refs')
+    dataset_id = pw.UUIDField()
+
+class ProjectMember(pw.Model):
+    '''Do not instantiate outside of `Project`.'''
+    project_id = pw.ForeignKeyField(Project, backref='_member_id_refs')
+    member_id = pw.CharField()
