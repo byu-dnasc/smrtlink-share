@@ -95,8 +95,7 @@ class Project(pw.Model):
         if kwargs: # external instance
             # initialize instance data
             super().__init__(*args, **kwargs)
-            self.datasets = [Dataset(**dct) 
-                             for dct in kwargs['datasets']]
+            self.datasets = {ds_dct['uuid']: Dataset(**ds_dct) for ds_dct in kwargs['datasets']}
             self.members = [member['login'] 
                             for member in kwargs['members'] 
                             if member['role'] != 'OWNER']
