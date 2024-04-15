@@ -2,8 +2,13 @@ import app.smrtlink as smrtlink
 from os import listdir, mkdir, makedirs, link, path, rename
 from os.path import join, basename, dirname
 import shutil
+import app.globus
 
 root = '/tmp/staging'
+PERMISSION=0o775
+
+def make_dir(dir):
+    mkdir(dir, PERMISSION)
 
 def stage_dataset(dir, dataset):
     if dataset.is_super: # type(files) is dict
@@ -39,7 +44,7 @@ def update(project):
         rename(project_path, new_project_path)
     if 'dataset_ids' in project.updates:
         pass # compare staged datasets to project datasets
-        updated_dataset_names = [smrtlink.get_client().get_dataset(uuid) for uuid in project.dataset_ids]
+        updated_dataset_names = [ds.name for ds in project.datasets]
         project_path = join(project_path, project.name)
         dataset_folders = [data_set_folder for data_set_folder in listdir(project_path) if path.isdir(path.join(project_path, data_set_folder))]
         for dataset in updated_dataset_names:
@@ -54,3 +59,7 @@ def update(project):
     if 'members' in project.updates:
         pass # compare ?
         # adding or removing access rules
+        new_members = magic()
+        remove_members = magic()
+        for member in remove_members:
+            globus.delete_access_rule(member, project.id)
