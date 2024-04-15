@@ -12,7 +12,9 @@ dotenv.load_dotenv()
 try:
     import app.smrtlink as smrtlink
     from app.globus import AccessRuleId
+    import app.globus as globus
     get_env_var('GROUP_NAME')
+    get_env_var('APP_USER')
 except EnvVarNotFoundError as e:
     print(e)
     exit(1)
