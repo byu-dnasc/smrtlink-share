@@ -1,4 +1,3 @@
-from app.smrtlink import _dict_to_project
 from app.project import Project, ProjectDataset, ProjectMember
 import json
 import pytest

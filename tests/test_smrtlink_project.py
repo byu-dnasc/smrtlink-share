@@ -39,8 +39,8 @@ def load_db(request, project_dicts_f):
         if len(marker.args) > 0:
             offset_index = -abs(marker.args[0]) # offset is arg[0]
         last_project_index = offset_index
-    # load data into the database by instantiating Project objects via the _dict_to_project function
-    [smrtlink._dict_to_project(dct) for dct in project_dicts_f[0:last_project_index]]
+    # load data into the database by instantiating Project objects
+    for dct in project_dicts_f[0:last_project_index]: Project(**dct) 
  
 @pytest.mark.db_offset()
 def test_offset(project_dicts_f):

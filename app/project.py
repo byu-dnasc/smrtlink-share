@@ -97,10 +97,6 @@ class Project(pw.Model):
         
         The instantiation of an external instance immediately saves a project
         to the database.
-
-        :param kwargs: when using init directly (as in `smrtlink._dict_to_project`),
-        `kwargs` is a dictionary of project data from SMRT Link, as well as a list 
-        of dataset ids under the key 'dataset_ids'.
         '''
         if 'datasets' in kwargs and 'members' in kwargs: # external instance
             # initialize instance data

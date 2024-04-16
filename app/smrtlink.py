@@ -4,21 +4,6 @@ from app.smrtlink_client import SmrtLinkClient
 from app.dataset import DnascDataSet
 from app import get_env_var, OutOfSyncError
 
-def _dict_to_project(dct):
-    '''
-    Adapt data obtained from SMRT Link to populate a Project object.
-    '''
-    members = [member['login'] for member in dct['members']]
-    dataset_keys = ['uuid', 'path', 'name', 'numChildren']
-    project_data = {
-        'id': dct['id'],
-        'name': dct['name'],
-        'members': ', '.join(members[1:]), # ignore the first member (project owner)
-        'description': dct['description'],
-        'datasets': [{key: ds[key] for key in dataset_keys} for ds in dct['datasets']]
-    }
-    return Project(**project_data)
-
 class DnascSmrtLinkClient(SmrtLinkClient):
 
     def get_project_dict(self, id):
@@ -73,7 +58,7 @@ def get_project(id):
     '''Get a project from SMRT Link by id.'''
     project_dict = CLIENT.get_project_dict(id)
     if project_dict:
-        return _dict_to_project(project_dict)
+        return Project(**project_dict)
     return None
 
 def get_new_project():
@@ -92,5 +77,5 @@ def load_db():
     projects = []
     for id in CLIENT.get_project_ids():
         project_dict = CLIENT.get_project_dict(id)
-        projects.append(_dict_to_project(project_dict))
+        projects.append(Project(**project_dict))
     Project.bulk_create(projects)
