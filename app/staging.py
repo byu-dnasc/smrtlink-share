@@ -3,7 +3,7 @@ from os import listdir, mkdir, makedirs, link, rename, stat, remove, walk
 import pwd
 from os.path import join, basename, dirname, exists
 import shutil
-import app.globus
+import app.globus as globus
 from app import get_env_var
 
 root = '/tmp/staging'
@@ -63,7 +63,7 @@ def update(project):
             make_dir(dataset_dir)
             stage_dataset(dataset_dir, dataset)
     if hasattr(project, "datasets_to_remove"):
-        for dataset in project.datasets_to_remove:
+        for dataset_id in project.datasets_to_remove:
             dataset = project.datasets[dataset_id]
             dataset_path = join(project_path, dataset.name)
             delete_dir(dataset_path)
