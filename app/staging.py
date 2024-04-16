@@ -1,8 +1,8 @@
-import app.smrtlink as smrtlink
 from os import listdir, mkdir, makedirs, link, rename, stat, remove, walk
+import shutil
+import app.smrtlink as smrtlink
 import pwd
 from os.path import join, basename, dirname, exists
-import shutil
 import app.globus as globus
 from app import get_env_var
 
@@ -53,9 +53,9 @@ def new(project):
 
 def update(project):
     project_path = join(root, project.id, project.name)
-    if hasattr(project, "rename"):
-        new_project_path = join(dirname(project_path), project.name)
-        rename(project_path, new_project_path)
+    if hasattr(project, "old_name"):
+        old_project_path = join(dirname(project_path), project.old_name)
+        rename(old_project_path, project_path)
     if hasattr(project, "datasets_to_add"):
         for dataset_id in project.datasets_to_add:
             dataset = project.datasets[dataset_id]
