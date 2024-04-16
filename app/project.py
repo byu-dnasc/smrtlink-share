@@ -17,11 +17,15 @@ class Project(pw.Model):
     id = pw.IntegerField(primary_key=True)
     name = pw.CharField()
 
+    @property
+    def id(self):
+        return str(self.id)
+
     def _get_updates(self, db_project):
         '''Identify changes between the instance and the database.'''
         if self.name != db_project.name:
             self.rename = True
-        current_ids = {ds.uuid for ds in self.datasets}
+        current_ids = {uuid for uuid in self.datasets.keys()}
         stale_ids = set(db_project._dataset_ids)
         if current_ids - stale_ids:
             self.datasets_to_add = list(current_ids - stale_ids)
@@ -59,7 +63,7 @@ class Project(pw.Model):
         self.save(force_insert=True)
         dataset_rows = [{'project_id': self.id, 
                          'dataset_id': ds.uuid} 
-                         for ds in self.datasets]
+                         for ds in self.datasets.values()]
         ProjectDataset.insert_many(dataset_rows).execute()
         member_rows = [{'project_id': self.id,
                         'member_id': member} 
@@ -92,7 +96,7 @@ class Project(pw.Model):
         `kwargs` is a dictionary of project data from SMRT Link, as well as a list 
         of dataset ids under the key 'dataset_ids'.
         '''
-        if kwargs: # external instance
+        if 'datasets' in kwargs and 'members' in kwargs: # external instance
             # initialize instance data
             super().__init__(*args, **kwargs)
             self.datasets = {ds_dct['uuid']: Dataset(**ds_dct) for ds_dct in kwargs['datasets']}
@@ -106,12 +110,14 @@ class Project(pw.Model):
                 self._update_db()
             else: # load new project data into database
                 self._insert_db()
-        else: # internal instance
+        elif 'id' in kwargs and 'name' in kwargs: # internal instance
             super().__init__(*args, **kwargs) # populate instance with database data in kwargs
             assert hasattr(self, '_dataset_id_refs'), 'ProjectDataset foreign key backref not found'
-            assert hasattr(self, '_member_refs'), 'ProjectMember foreign key backref not found'
+            assert hasattr(self, '_member_id_refs'), 'ProjectMember foreign key backref not found'
             self._dataset_ids = [str(ref.dataset_id) for ref in self._dataset_id_refs]
             self._members = [str(ref.member_id) for ref in self._member_id_refs]
+        else:
+            raise ValueError('Missing arguments to Project.__init__')
     
     def __str__(self):
         return str(self.name)
