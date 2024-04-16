@@ -30,7 +30,7 @@ def test_update_project_name(project_dicts_f):
     proj = Project(**p_d)
     p_d['name'] = 'updated name'
     proj_updated = Project(**p_d)
-    assert proj_updated.updates == ['name']
+    assert hasattr(proj_updated, 'old_name')
 
 def test_update_project_add_dataset(project_dicts_f):
     p_d = project_dicts_f[0]
@@ -39,15 +39,13 @@ def test_update_project_add_dataset(project_dicts_f):
     new_dataset['uuid'] = 'new uuid'
     p_d['datasets'].append(new_dataset)
     proj_updated = Project(**p_d)
-    assert proj_updated.updates == ['datasets']
-    assert proj_updated.datasets_to_stage == ['new uuid']
-    assert not hasattr(proj_updated, 'datasets_to_remove')
+    assert hasattr(proj_updated, 'datasets_to_add')
+    assert proj_updated.datasets_to_add == ['new uuid']
 
 def test_update_project_remove_dataset(project_dicts_f):
     p_d = project_dicts_f[0]
     proj = Project(**p_d)
     ds_removed = p_d['datasets'].pop()
     proj_updated = Project(**p_d)
-    assert proj_updated.updates == ['datasets']
-    assert not hasattr(proj_updated, 'datasets_to_stage')
-    assert proj_updated.datasets_to_remove == [ds_removed['uuid']]
+    assert hasattr(proj_updated, 'names_of_datasets_to_remove')
+    assert proj_updated.names_of_datasets_to_remove == [ds_removed['name']]

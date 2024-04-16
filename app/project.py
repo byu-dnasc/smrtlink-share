@@ -24,13 +24,15 @@ class Project(pw.Model):
     def _get_updates(self, db_project):
         '''Identify changes between the instance and the database.'''
         if self.name != db_project.name:
-            self.rename = True
+            self.old_name = db_project.name
         current_ids = {uuid for uuid in self.datasets.keys()}
-        stale_ids = set(db_project._dataset_ids)
+        stale_ids = {ds.id for ds in db_project._datasets}
         if current_ids - stale_ids:
             self.datasets_to_add = list(current_ids - stale_ids)
         if stale_ids - current_ids:
-            self.datasets_to_remove = list(stale_ids - current_ids)
+            self._ids_of_datasets_to_remove = list(stale_ids - current_ids)
+            self.names_of_datasets_to_remove = [ds.name for ds in db_project._datasets 
+                                                if ds.id in self._ids_of_datasets_to_remove]
         current_members = set(self.members)
         stale_members = set(db_project._members)
         if current_members - stale_members:
@@ -43,11 +45,14 @@ class Project(pw.Model):
         self.save() # update project name
         if hasattr(self, 'datasets_to_add'):
             for uuid in self.datasets_to_add:
-                ProjectDataset.insert(project_id=self.id, dataset_id=uuid).execute()
-        if hasattr(self, 'datasets_to_remove'):
+                (ProjectDataset.insert(project_id=self.id, 
+                                      dataset_id=uuid,
+                                      dataset_name=self.datasets[uuid].name)
+                               .execute())
+        if hasattr(self, '_ids_of_datasets_to_remove'):
             (ProjectDataset.delete()
                             .where(ProjectDataset.project_id == self.id,
-                                   ProjectDataset.dataset_id.in_(self.datasets_to_remove))
+                                   ProjectDataset.dataset_id.in_(self._ids_of_datasets_to_remove))
                             .execute())
         if hasattr(self, 'members_to_add'):
             for member in self.members_to_add:
@@ -62,7 +67,8 @@ class Project(pw.Model):
         '''Insert a new project into the database.'''
         self.save(force_insert=True)
         dataset_rows = [{'project_id': self.id, 
-                         'dataset_id': ds.uuid} 
+                         'dataset_id': ds.id,
+                         'dataset_name': ds.name} 
                          for ds in self.datasets.values()]
         ProjectDataset.insert_many(dataset_rows).execute()
         member_rows = [{'project_id': self.id,
@@ -98,6 +104,7 @@ class Project(pw.Model):
         '''
         if 'datasets' in kwargs and 'members' in kwargs: # external instance
             # initialize instance data
+            assert 'id' in kwargs and 'name' in kwargs, 'Missing project data'
             super().__init__(*args, **kwargs)
             self.datasets = {ds_dct['uuid']: Dataset(**ds_dct) for ds_dct in kwargs['datasets']}
             self.members = [member['login'] 
@@ -110,11 +117,12 @@ class Project(pw.Model):
                 self._update_db()
             else: # load new project data into database
                 self._insert_db()
-        elif 'id' in kwargs and 'name' in kwargs: # internal instance
+        elif 'id' in kwargs and 'name' in kwargs: # internal instance, a.k.a. database instance
             super().__init__(*args, **kwargs) # populate instance with database data in kwargs
             assert hasattr(self, '_dataset_id_refs'), 'ProjectDataset foreign key backref not found'
             assert hasattr(self, '_member_id_refs'), 'ProjectMember foreign key backref not found'
-            self._dataset_ids = [str(ref.dataset_id) for ref in self._dataset_id_refs]
+            self._datasets = [Dataset(uuid=ref.dataset_id,
+                                      name=ref.dataset_name) for ref in self._dataset_id_refs]
             self._members = [str(ref.member_id) for ref in self._member_id_refs]
         else:
             raise ValueError('Missing arguments to Project.__init__')
@@ -124,10 +132,18 @@ class Project(pw.Model):
 
 class Dataset:
     def __init__(self, **kwargs):
-        self.uuid = kwargs['uuid']
+        '''
+        Two use cases:
+        1. For external Project instances: all four fields are required.
+        2. For internal Project instances: only the first two fields are required.
+
+        Keyword parameters are named after the fields in the SMRT Link API.
+        '''
+        self.id = str(kwargs['uuid'])
         self.name = kwargs['name']
-        self.path = kwargs['path']
-        self.num_children = kwargs['numChildren']
+        if 'path' in kwargs and 'numChildren' in kwargs:
+            self.path = kwargs['path']
+            self.num_children = kwargs['numChildren']
 
     def __str__(self):
         return str(self.name)
@@ -136,6 +152,7 @@ class ProjectDataset(pw.Model):
     '''Do not instantiate outside of `Project`.'''
     project_id = pw.ForeignKeyField(Project, backref='_dataset_id_refs')
     dataset_id = pw.UUIDField()
+    dataset_name = pw.CharField()
 
 class ProjectMember(pw.Model):
     '''Do not instantiate outside of `Project`.'''
