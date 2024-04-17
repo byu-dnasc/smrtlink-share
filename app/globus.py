@@ -57,6 +57,8 @@ def _delete_access_rule(access_rule_id):
         TRANSFER_CLIENT.delete_endpoint_acl_rule(COLLECTION_ID, access_rule_id)
     except globus_sdk.TransferAPIError:
         pass # TODO Log the error
+    # delete from database
+    AccessRuleId.delete().where(AccessRuleId.rule_id == access_rule_id).execute()
 
 def _get_access_rule_id(user_id, project_id):
     return (AccessRuleId.select()
