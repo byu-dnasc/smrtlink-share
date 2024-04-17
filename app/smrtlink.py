@@ -1,8 +1,14 @@
 from requests import HTTPError
 from app.project import Project
 from app.smrtlink_client import SmrtLinkClient
-from app.dataset import DnascDataSet
 from app import get_env_var, OutOfSyncError
+
+class DnascDataSet:
+    def __init__(self, uuid, name, path, num_children):
+        self.uuid = uuid
+        self.name = name
+        self.path = path
+        self.num_children = num_children
 
 class DnascSmrtLinkClient(SmrtLinkClient):
 
