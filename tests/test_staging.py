@@ -24,15 +24,39 @@ def test_delete_dir():
     staging.delete_dir(path)
     assert not exists(f"{path}/test_file")
 
-class Obj:
+class TestDataSet:
+    def __init__(self):
+        self.name = "dataset1"
+        self.id = 1
+        self.is_super = False
+        self.files = []
+
+class TestProject:
     def __init__ (self):
         self.id = "1"
         self.name = "test_obj"
+        self.datasets = {
+            1:TestDataSet(),
+            }
         
 def test_update_rename():
-    project = Obj()
+    project = TestProject()
     makedirs(join(staging.root, project.id, project.name))
     project.old_name = project.name
     project.name = "new_name"
     staging.update(project)
     assert exists(join(staging.root, project.id, project.name))
+
+def test_update_add_datasets():
+    project = TestProject()
+    project.datasets_to_add = [1]
+    makedirs(join(staging.root, project.id, project.name))
+    staging.update(project)
+    assert exists(join(staging.root, project.id, project.name, project.datasets[1].name))
+
+def test_datasets_to_remove():
+    project = TestProject()
+    project.names_of_datasets_to_remove = ["dataset1"]
+    makedirs(join(staging.root, project.id, project.name, project.datasets[1].name))
+    staging.update(project)
+    assert not exists(join(staging.root, project.id, project.name, project.datasets[1].name))
