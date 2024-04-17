@@ -6,6 +6,8 @@ IDENTITY_ID = "19ff6717-c44d-4ab4-983c-1eb2095beba4" # aknaupp@byu.edu
 class FakeTransferClient:
     def add_endpoint_acl_rule(*args):
         return uuid.uuid4()
+    def delete_endpoint_acl_rule(*args):
+        pass
 globus.TRANSFER_CLIENT = FakeTransferClient()
 
 def test_add_access_rule_live():
@@ -35,3 +37,20 @@ def test_get_project_access_rule_ids():
         )
     rule_ids = globus.get_project_access_rule_ids('project_id')
     assert len(rule_ids) == 1
+
+def test_add_access_rule():
+    user_id = "asdf"
+    project_path = "/"
+    project_id = 1
+    globus.add_access_rule(user_id, project_path, project_id)
+    project_rule_ids = globus.get_project_access_rule_ids(project_id)
+    assert len(project_rule_ids) == 1
+
+def test_delete_access_rule():
+    user_id = "asdf"
+    project_path = "/"
+    project_id = 1
+    globus.add_access_rule(user_id, project_path, project_id)
+    globus.delete_access_rule(user_id, project_id)
+    project_rule_ids = globus.get_project_access_rule_ids(project_id)
+    assert len(project_rule_ids) == 0
