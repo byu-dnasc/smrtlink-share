@@ -1,4 +1,4 @@
-from os import listdir, mkdir, makedirs, link, rename, stat, remove, walk
+from os import listdir, mkdir, makedirs, link, rename, stat, remove, walk, rmdir
 import shutil
 import app.smrtlink as smrtlink
 import pwd
@@ -39,6 +39,14 @@ def delete_dir(path):
             fileowner = get_user(filepath)
             if fileowner == APP_USER:
                 remove(filepath)
+    try:
+        # After deleting all files that belong to the app user, we want to try to delete
+        # the directory that contained the files if there are no other files belonging
+        # to other users in that directory. If there were other files, it is okay
+        # for the directory to continue to exist.
+        rmdir(path)
+    except:
+        pass
 
 def new(project):
     project_dir = join(root, str(project.id), project.name)
@@ -62,10 +70,9 @@ def update(project):
             dataset_dir = join(project_path, dataset.name)
             make_dir(dataset_dir)
             stage_dataset(dataset_dir, dataset)
-    if hasattr(project, "datasets_to_remove"):
-        for dataset_id in project.datasets_to_remove:
-            dataset = project.datasets[dataset_id]
-            dataset_path = join(project_path, dataset.name)
+    if hasattr(project, "names_of_datasets_to_remove"):
+        for dataset_name in project.names_of_datasets_to_remove:
+            dataset_path = join(project_path, dataset_name)
             delete_dir(dataset_path)
     if hasattr(project, "members_to_add"):
         for member in project.members_to_add:
