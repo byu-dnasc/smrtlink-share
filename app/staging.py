@@ -59,24 +59,53 @@ def new(project):
         mkdir(dataset_dir)
         stage_dataset(dataset_dir, dataset)
 
-def update(project):
+def get_project_path(project):
     project_path = join(root, project.id, project.name)
+    return project_path
+
+def get_dataset_path(dataset, project_path):
+    if dataset.has_children:
+        dir = f'{dataset.movie_id} - {dataset.name}'
+        return join(project_path, dir)
+    else:
+        pass
+
+def rename_project(project):
+    project_path = get_project_path(project)
+    old_project_path = join(dirname(project_path), project.old_name)
+    rename(old_project_path, project_path)
+
+def add_datasets(project):
+    project_path = get_project_path(project)
+    for dataset_id in project.datasets_to_add:
+        dataset = project.datasets[dataset_id]
+        dataset_dir = join(project_path, dataset.name)
+        make_dir(dataset_dir)
+        stage_dataset(dataset_dir, dataset)
+
+def remove_datasets(project):
+    project_path = get_project_path(project)
+    for dataset_name in project.names_of_datasets_to_remove:
+        dataset_path = join(project_path, dataset_name)
+        delete_dir(dataset_path)
+
+def add_member(project):
+    project_path = get_project_path(project)
+    for member in project.members_to_add:
+        globus.add_access_rule(member, project_path, project.id)
+
+def remove_member(project):
+    for member in project.members_to_remove:
+        globus.delete_access_rule(member, project.id)
+
+def update(project):
     if hasattr(project, "old_name"):
-        old_project_path = join(dirname(project_path), project.old_name)
-        rename(old_project_path, project_path)
+        rename_project(project)
     if hasattr(project, "datasets_to_add"):
-        for dataset_id in project.datasets_to_add:
-            dataset = project.datasets[dataset_id]
-            dataset_dir = join(project_path, dataset.name)
-            make_dir(dataset_dir)
-            stage_dataset(dataset_dir, dataset)
+        add_datasets(project)
     if hasattr(project, "names_of_datasets_to_remove"):
-        for dataset_name in project.names_of_datasets_to_remove:
-            dataset_path = join(project_path, dataset_name)
-            delete_dir(dataset_path)
+        remove_datasets(project)
     if hasattr(project, "members_to_add"):
-        for member in project.members_to_add:
-            globus.add_access_rule(member, project_path, project.id)
+        add_member(project)
     if hasattr(project, "members_to_remove"):
-        for member in project.members_to_remove:
-            globus.delete_access_rule(member, project.id)
+        remove_member(project)
