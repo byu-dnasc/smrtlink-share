@@ -23,6 +23,11 @@ def _get_transfer_client():
     except Exception as e:
         return None
 
+class AccessRuleId(pw.Model):
+    rule_id = pw.CharField(primary_key=True)
+    project_id = pw.IntegerField()
+    globus_user_id = pw.CharField()
+
 TRANSFER_CLIENT = _get_transfer_client()
 
 def add_access_rule(user_id, project_path, project_id):
@@ -68,11 +73,6 @@ def _get_access_rule_id(user_id, project_id):
 def delete_access_rule(user_id, project_id):
     rule_id = _get_access_rule_id(user_id, project_id)
     _delete_access_rule(rule_id)
-
-class AccessRuleId(pw.Model):
-    rule_id = pw.CharField(primary_key=True)
-    project_id = pw.IntegerField()
-    globus_user_id = pw.CharField()
 
 def get_project_access_rule_ids(project_id):
     ids = AccessRuleId.select().where(AccessRuleId.project_id == project_id)
