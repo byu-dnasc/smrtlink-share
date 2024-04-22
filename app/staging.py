@@ -1,8 +1,10 @@
 from os import listdir, mkdir, makedirs, link, rename, stat, remove, walk, rmdir
 import shutil
+import peewee as pw
 import app.smrtlink as smrtlink
 import pwd
 from os.path import join, basename, dirname, exists
+import app.dataset as dataset
 import app.globus as globus
 from app import get_env_var
 
@@ -12,6 +14,10 @@ APP_USER = get_env_var("APP_USER")
 
 def make_dir(dir):
     mkdir(dir, PERMISSION)
+
+class DatasetDirectory(pw.Model):
+    dataset_id = pw.UUIDField()
+    path = pw.CharField()
 
 def stage_dataset(dir, dataset):
     if dataset.is_super: # type(files) is dict
@@ -63,13 +69,6 @@ def get_project_path(project):
     project_path = join(root, project.id, project.name)
     return project_path
 
-def get_dataset_path(dataset, project_path):
-    if dataset.has_children:
-        dir = f'{dataset.movie_id} - {dataset.name}'
-        return join(project_path, dir)
-    else:
-        pass
-
 def rename_project(project):
     project_path = get_project_path(project)
     old_project_path = join(dirname(project_path), project.old_name)
@@ -79,14 +78,15 @@ def add_datasets(project):
     project_path = get_project_path(project)
     for dataset_id in project.datasets_to_add:
         dataset = project.datasets[dataset_id]
-        dataset_dir = join(project_path, dataset.name)
+        dataset_dir = dir_path(project_path, dataset)
         make_dir(dataset_dir)
         stage_dataset(dataset_dir, dataset)
 
 def remove_datasets(project):
     project_path = get_project_path(project)
-    for dataset_name in project.names_of_datasets_to_remove:
-        dataset_path = join(project_path, dataset_name)
+    for dataset_id in project.datasets_to_remove:
+        dataset_path = (DatasetDirectory.select(DatasetDirectory.path)
+                                        .where(DatasetDirectory.dataset_id == dataset_id))
         delete_dir(dataset_path)
 
 def add_member(project):
@@ -97,13 +97,13 @@ def add_member(project):
 def remove_member(project):
     for member in project.members_to_remove:
         globus.delete_access_rule(member, project.id)
-
+ 
 def update(project):
     if hasattr(project, "old_name"):
         rename_project(project)
     if hasattr(project, "datasets_to_add"):
         add_datasets(project)
-    if hasattr(project, "names_of_datasets_to_remove"):
+    if hasattr(project, "datasets_to_remove"):
         remove_datasets(project)
     if hasattr(project, "members_to_add"):
         add_member(project)
