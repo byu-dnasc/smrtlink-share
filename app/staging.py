@@ -12,26 +12,24 @@ root = '/tmp/staging'
 PERMISSION=0o775
 APP_USER = get_env_var("APP_USER")
 
-def make_dir(dir):
-    mkdir(dir, PERMISSION)
-
 class DatasetDirectory(pw.Model):
     dataset_id = pw.UUIDField()
     path = pw.CharField()
 
+def make_dir(dir):
+    """
+    Calls the makedirs method.
+    PERMISSION gives the owner and the group full permissions. 
+    exist_ok=True will prevent an error from occuring if the directory already exists. 
+    """
+    makedirs(dir, PERMISSION, exist_ok=True)
+
 def stage_dataset(dir, dataset):
     """
-    Verifies the type of dataset 
+    For each file in a dataset, the filepath is linked to the dataset directory.
     """
-    if dataset.is_super: # type(files) is dict
-        for sample_dir_basename, filepaths in dataset.files.items():
-            sample_dir = join(dir, sample_dir_basename)
-            mkdir(sample_dir)
-            for filepath in filepaths:
-                link(filepath, join(sample_dir, basename(filepath)))
-    else: # type(files) is list
-        for filepath in dataset.files:
-            link(filepath, join(dir, basename(filepath)))
+    for filepath in dataset.files:
+        link(filepath, join(dir, basename(filepath)))
 
 def get_user(filepath):
     return pwd.getpwuid(stat(filepath).st_uid).pw_name
@@ -96,15 +94,13 @@ def rename_project(project):
     rename(old_project_path, project_path)
 
 def add_datasets(project):
-    """
-    Gets called in the update function below. For each dataset_id in the project.datasets_to_add
-    attribute, a dataset directory is created and staged.
-    """
     project_path = get_project_path(project)
     for dataset_id in project.datasets_to_add:
         dataset = project.datasets[dataset_id]
-        dataset_dir = dir_path(project_path, dataset)
+        project_path = get_project_path(project)
+        dataset_dir = join(project_path, dataset.dir_path())
         make_dir(dataset_dir)
+        DatasetDirectory.create(dataset_id=dataset_id, path=dataset_dir)
         stage_dataset(dataset_dir, dataset)
 
 def remove_datasets(project):
