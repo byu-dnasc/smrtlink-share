@@ -44,7 +44,7 @@ def _get_dataset_files(xml_file) -> list[str]:
 
 def _get_xml(xml_res: ExternalResource):
     # one of the resource's externalResources is the sample XML
-    xml_files = [res for res in xml_res.externalResources if res.resourceId.endswith('.xml')]
+    xml_files = [res.resourceId for res in xml_res.externalResources if res.resourceId.endswith('.xml')]
     assert xml_files, 'No XML file found in externalResource'
     return xml_files[0]
 
@@ -108,7 +108,7 @@ def get_barcode(xml: DatasetXml) -> str | None:
         return None
 
 class Dataset:
-    def __new__(cls, **kwargs):
+    def __new__(cls, *args, **kwargs):
         if 'numChildren' in kwargs and kwargs['numChildren'] > 0:
             return super(Dataset, cls).__new__(Parent)
         else:
