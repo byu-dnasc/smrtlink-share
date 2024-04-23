@@ -120,19 +120,35 @@ class Dataset:
         self.xml = DatasetXml(self.xml_path)
         self.movie_id = get_movie_id(self.xml)
         self.files = []
+        if self.xml.supplementalResources:
+            self.files = _resources_to_file_paths(self.xml.supplementalResources)
 
-    def dir_path(self):
+    def dir_name(self):
+        '''
+        Return the name of the directory where this dataset should be staged.
+        '''
         return f'Movie {self.movie_id} - {self.name}'
 
     def __str__(self):
         return str(self.name)
 
 class Parent(Dataset):
+    '''
+    Files belonging to a Parent dataset come only from the supplementalResources
+    section of the dataset XML because the externalResources section contains
+    only references to child datasets.
+    '''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         child_dataset_dicts = _get_child_dataset_dicts(self.xml)
         self.child_datasets = [Child(self, **child_dict) for child_dict in child_dataset_dicts]
-        self.files = _resources_to_file_paths(self.xml.supplementalResources)
+    
+    def outer_dir_name(self):
+        return super().dir_name()
+    
+    def dir_name(self):
+        parent_dir = self.outer_dir_name()
+        return f'{parent_dir}/Supplemental Run Data'
     
 class Child(Dataset):
     def __init__(self, parent=None, **kwargs):
@@ -140,13 +156,16 @@ class Child(Dataset):
         self.barcode = get_barcode(self.xml)
         self.name = get_sample_name(self.xml) # replace DataSet name with BioSample name
         self.parent = parent
+        self.files.extend(_resources_to_file_paths(self.xml.externalResources))
     
-    def dir_path(self):
+    def dir_name(self):
         '''
-        If this instance was not created from a Parent instance, then
-        the parent attribute is None.
+        Override the parent method to return the dataset's directory
+        name prefixed with the parent dataset's directory name. 
+        The result is a relative path to the dataset's directory
+        (relative to the project directory).
         '''
         parent_path = f'Movie {self.movie_id}'
         if self.parent:
-            parent_path = self.parent.dir_path()
+            parent_path = self.parent.outer_dir_name()
         return f'{parent_path}/{self.name} ({self.barcode})'
