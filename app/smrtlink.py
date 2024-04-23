@@ -47,6 +47,9 @@ USER = get_env_var('SMRTLINK_USER')
 PASS = get_env_var('SMRTLINK_PASS')
 
 def _get_smrtlink_client():
+    """
+    Gets DnascSmrtLinkClient object
+    """
     try:
         return DnascSmrtLinkClient(
             host=HOST,
@@ -61,13 +64,17 @@ def _get_smrtlink_client():
 CLIENT = _get_smrtlink_client()
     
 def get_project(id):
-    '''Get a project from SMRT Link by id.'''
+    '''Get a project from SMRT Link by id by calling get_project_dict method.'''
     project_dict = CLIENT.get_project_dict(id)
     if project_dict:
         return Project(**project_dict)
     return None
 
 def get_new_project():
+    """Gets all of the projects and project IDs. Checks to see if there are more 
+    sl projects than db projects. If the difference is greater than one, it will 
+    raise an error. Otherwise it will return the newest project.
+    """
     db_ids = Project.select(Project.id)
     sl_ids = CLIENT.get_project_ids()
 
