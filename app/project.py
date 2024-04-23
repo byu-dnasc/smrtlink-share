@@ -101,9 +101,11 @@ class Project(pw.Model):
             super().__init__(*args, **kwargs)
             self.datasets = {ds_dct['uuid']: Dataset(**ds_dct) for ds_dct in kwargs['datasets']}
             # add child datasets to self.datasets
+            child_datasets = {}
             for ds in self.datasets.values():
-                if ds is Parent:
-                    self.datasets.update({child.id: child for child in ds.child_datasets})
+                if type(ds) is Parent:
+                    child_datasets.update({child.id: child for child in ds.child_datasets})
+            self.datasets.update(child_datasets)
             self.members = [member['login'] 
                             for member in kwargs['members'] 
                             if member['role'] != 'OWNER']
@@ -125,6 +127,14 @@ class Project(pw.Model):
     
     def __str__(self):
         return str(self.name)
+    
+    def __iter__(self):
+        '''Iterate over datasets in the project.'''
+        return iter(self.datasets.values())
+    
+    def __getitem__(self, key):
+        '''Get a dataset by its uuid.'''
+        return self.datasets[key]
 
 class ProjectDataset(pw.Model):
     '''Do not instantiate outside of `Project`.'''
