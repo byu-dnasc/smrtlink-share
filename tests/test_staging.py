@@ -1,11 +1,14 @@
 from os import listdir, mkdir, makedirs, link, rename, stat, remove, walk
 from os.path import join, basename, dirname, exists, isdir
 import app.staging as staging
+from app.staging import DatasetDirectory
 import shutil
 import pytest
 import os
 import app.smrtlink as smrtlink
+from app.project import Project
 
+from tests.test_project import PROJECT
 
 @pytest.fixture(autouse=True)
 def cleanup():
@@ -13,8 +16,13 @@ def cleanup():
     mkdir(staging.root)
 
 def test_new():
-    staging.new(2)
-    assert isdir(join(staging.root, "2/Tomato", "Germany tomato 20 and 21-Cell1 (all samples)"))
+    proj = Project(**PROJECT)
+    staging.new(proj)
+    path = join(staging.root, str(proj.id), proj.name)
+    assert isdir(path), 'Project directory not created'
+    path = join(path, proj.datasets['48a71a3e-c97c-43ea-ba41-8c2b31dd32b2'].dir_name())
+    assert isdir(join(staging.root, path)), 'Parent dataset directory not created'
+    assert DatasetDirectory.select().count() == 3
 
 def test_delete_dir():
     path = staging.root + "/test_file_dir"
@@ -60,3 +68,4 @@ def test_datasets_to_remove():
     makedirs(join(staging.root, project.id, project.name, project.datasets[1].name))
     staging.update(project)
     assert not exists(join(staging.root, project.id, project.name, project.datasets[1].name))
+

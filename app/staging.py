@@ -1,10 +1,7 @@
 from os import listdir, mkdir, makedirs, link, rename, stat, remove, walk, rmdir
-import shutil
 import peewee as pw
-import app.smrtlink as smrtlink
 import pwd
 from os.path import join, basename, dirname, exists
-import app.dataset as dataset
 import app.globus as globus
 from app import get_env_var
 
@@ -68,14 +65,12 @@ def new(project):
     Then creates and stages a directory for each dataset in a project's dataset_ids attribute based on the uuids.
     """
     project_dir = join(root, str(project.id), project.name)
-    makedirs(project_dir)
-    for uuid in project.dataset_ids:
-        dataset = smrtlink.get_client().get_dataset(uuid)
-        if not dataset:
-            continue
-        dataset_dir = join(project_dir, dataset.name)
-        mkdir(dataset_dir)
+    make_dir(project_dir)
+    for dataset in project:
+        dataset_dir = join(project_dir, dataset.dir_name())
+        make_dir(dataset_dir)
         stage_dataset(dataset_dir, dataset)
+        DatasetDirectory.create(dataset_id=dataset.id, path=dataset_dir)
 
 def get_project_path(project):
     """
@@ -96,7 +91,7 @@ def rename_project(project):
 def add_datasets(project):
     project_path = get_project_path(project)
     for dataset_id in project.datasets_to_add:
-        dataset = project.datasets[dataset_id]
+        dataset = project[dataset_id]
         project_path = get_project_path(project)
         dataset_dir = join(project_path, dataset.dir_path())
         make_dir(dataset_dir)
@@ -108,7 +103,6 @@ def remove_datasets(project):
     Gets called in the update function below. For each dataset_id in the project.datasets_to_remove 
     attribute, the dataset path is queried and deleted.
     """
-    project_path = get_project_path(project)
     for dataset_id in project.datasets_to_remove:
         dataset_path = (DatasetDirectory.select(DatasetDirectory.path)
                                         .where(DatasetDirectory.dataset_id == dataset_id))
