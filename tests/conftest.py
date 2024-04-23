@@ -1,10 +1,12 @@
 import pytest
 import peewee as pw
-from app.project import Project, ProjectDataset, ProjectMember
 
 # Configure environment variables
 import dotenv
 dotenv.load_dotenv()
+
+from app.project import Project, ProjectDataset, ProjectMember
+from app.staging import DatasetDirectory
 
 # import modules that rely on environment variables
 import app.smrtlink as smrtlink
@@ -17,7 +19,8 @@ def init_db():
     ProjectDataset.bind(db)
     ProjectMember.bind(db)
     AccessRuleId.bind(db)
-    db.create_tables([Project, ProjectDataset, ProjectMember, AccessRuleId], safe=True)
+    DatasetDirectory.bind(db)
+    db.create_tables([Project, ProjectDataset, ProjectMember, AccessRuleId, DatasetDirectory], safe=True)
     yield
     db.close()
 
