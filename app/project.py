@@ -45,8 +45,7 @@ class Project(pw.Model):
         if hasattr(self, 'datasets_to_add'):
             for uuid in self.datasets_to_add:
                 (ProjectDataset.insert(project_id=self.id, 
-                                      dataset_id=uuid,
-                                      dataset_name=self.datasets[uuid].name)
+                                      dataset_id=uuid)
                                .execute())
         if hasattr(self, '_ids_of_datasets_to_remove'):
             (ProjectDataset.delete()
@@ -66,8 +65,7 @@ class Project(pw.Model):
         '''Insert a new project into the database.'''
         self.save(force_insert=True)
         dataset_rows = [{'project_id': self.id, 
-                         'dataset_id': ds.id,
-                         'dataset_name': ds.name} 
+                         'dataset_id': ds.id} 
                          for ds in self.datasets.values()]
         ProjectDataset.insert_many(dataset_rows).execute()
         member_rows = [{'project_id': self.id,
