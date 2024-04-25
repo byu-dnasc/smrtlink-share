@@ -4,11 +4,13 @@ import grp
 import dotenv
 import peewee as pw
 
-from app.project import Project
+dotenv.load_dotenv() # load env vars before any imports
+
+from app.project import Project, ProjectDataset, ProjectMember
 from app import get_env_var, EnvVarNotFoundError
+from app.staging import DatasetDirectory
 
 # report and exit if any environment variables are missing
-dotenv.load_dotenv()
 try:
     import app.smrtlink as smrtlink
     from app.globus import AccessRuleId
@@ -34,8 +36,11 @@ except Exception as e:
     print(f"Failed to initialize database: {e}")
     exit(1)
 Project.bind(db)
+ProjectDataset.bind(db)
+ProjectMember.bind(db)
+DatasetDirectory.bind(db)
 AccessRuleId.bind(db)
-db.create_tables([Project, AccessRuleId], safe=True)
+db.create_tables([Project, ProjectDataset, ProjectMember, AccessRuleId, DatasetDirectory], safe=True)
 
 # check that the app is running as the correct group
 group_name = get_env_var('GROUP_NAME')
@@ -54,8 +59,6 @@ os.umask(0)
 # initialize and run the app
 from app.server import App
 
-logging.basicConfig(filename='request.log', level=logging.INFO)
-
-app = App(('localhost', 9093), logging.getLogger(__name__))
+app = App(('localhost', 9093))
 
 app.run()
