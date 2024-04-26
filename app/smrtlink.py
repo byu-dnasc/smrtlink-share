@@ -3,13 +3,6 @@ from app.project import Project
 from app.smrtlink_client import SmrtLinkClient
 from app import get_env_var, OutOfSyncError
 
-class DnascDataSet:
-    def __init__(self, uuid, name, path, num_children):
-        self.uuid = uuid
-        self.name = name
-        self.path = path
-        self.num_children = num_children
-
 class DnascSmrtLinkClient(SmrtLinkClient):
 
     def get_project_dict(self, id):
@@ -28,19 +21,6 @@ class DnascSmrtLinkClient(SmrtLinkClient):
         lst = self.get("/smrt-link/projects")
         return [dct['id'] for dct in lst]
    
-    def get_dataset(self, uuid):
-        '''
-        param uuid: The UUID of a dataset of any type
-        return: a DataSet object, or None if not found
-        '''
-        ds = self.get_dataset_search(uuid) # 404 safe
-        if ds is None:
-            return None
-        num_children = 0
-        if hasattr(ds, 'numChildren'):
-            num_children = ds['numChildren']
-        return DnascDataSet(ds['uuid'], ds['path'], ds['name'], num_children)
-
 HOST = get_env_var('SMRTLINK_HOST')
 PORT = get_env_var('SMRTLINK_PORT')
 USER = get_env_var('SMRTLINK_USER')
@@ -81,14 +61,22 @@ def get_new_project():
     offset = len(sl_ids) - len(db_ids)
     if offset == 0:
         return None
-    elif offset > 1:
+    elif offset == 1:
+        return get_project(sl_ids[-1])
+    else: # abs(offset) > 1
         raise OutOfSyncError()
 
-    return get_project(sl_ids[-1])
+def sync_projects():
+    ...
 
 def load_db():
+    '''Load the database with projects from SMRT Link.'''
+    # clear the database
+    Project.delete.execute()
+    # repopulate the database
     projects = []
     for id in CLIENT.get_project_ids():
         project_dict = CLIENT.get_project_dict(id)
         projects.append(Project(**project_dict))
     Project.bulk_create(projects)
+    return projects

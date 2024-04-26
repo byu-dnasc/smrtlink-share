@@ -6,8 +6,6 @@ import app.globus as globus
 from app import logger, OutOfSyncError
 import re
 
-PROJECT_PATH = '/smrt-link/projects'
-
 class InvalidRequestError(Exception):
     pass
 
@@ -23,8 +21,8 @@ class RequestHandler(BaseHTTPRequestHandler):
     '''
     Respond to and log requests, then handle them asynchronously
     '''
-    def _log_request(self, code):
-        if code == 200:
+    def _log_request(self):
+        if self.response_code == 200:
             if self.command == 'POST':
                 logger.info(f'Received notification that a new project was created in SMRT Link')
             elif self.command == 'PUT':
@@ -36,42 +34,49 @@ class RequestHandler(BaseHTTPRequestHandler):
         else:
             logger.info(f'Received invalid request: {self.command} {self.path}')
     
-    def _get_response_code(self):
-        '''Return the appropriate response code for the request'''
-        assert self.command in ['POST', 'PUT', 'DELETE']
-        if self.command in ['PUT', 'DELETE']:
-            return 200 if _get_project_id(self.path) \
-                        else 404
-        else: # POST
-            return 200 if self.path == '/smrt-link/projects' \
-                        else 404
-            
-    def _respond_log_wait(self):
-        code = self._get_response_code()
-        self.send_response(code) # RESPOND to client/proxy
-        self.end_headers()
-        self._log_request(code) # LOG the request
-        if code == 404:
-            raise InvalidRequestError
-        sleep(1) # WAIT for SMRT Link to process the request
-    
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
         self._log_request(200)
         self.wfile.write(b'smrtlink-share app is online')
 
+    def _get_response_code(self):
+        '''Return the appropriate response code for the request'''
+        assert self.command in ['POST', 'PUT', 'DELETE']
+        if self.command in ['PUT', 'DELETE']:
+            self.project_id = _get_project_id(self.path)
+            return 200 if self.project_id \
+                        else 404
+        else: # POST
+            return 200 if self.path == '/smrt-link/projects' \
+                        else 404
+            
+    def _respond_log_wait(self):
+        self.send_response(self.response_code) # RESPOND to client/proxy
+        self.end_headers()
+        self._log_request() # LOG the request
+        if self.response_code == 404:
+            raise InvalidRequestError
+        sleep(1) # WAIT for SMRT Link to process the request
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.project_id = _get_project_id(self.path)
+        self.response_code = self._get_response_code()
+    
     def do_PUT(self):
-        '''
-        Anything may need to be modified, including
-        files, directory names, and access rules
-        '''
         try:
             self._respond_log_wait()
         except InvalidRequestError:
             return
-        project_id = _get_project_id(self.path)
-        if project_id:
+        try:
+            project = smrtlink.get_project(self.project_id)
+        except Exception as e:
+            logger.error(f'Error getting project {self.project_id} from SMRT Link: {e}')
+            return
+        try:
+            staging.update(project)
+        except Exception as e:
             pass
 
     def do_POST(self):
@@ -81,8 +86,12 @@ class RequestHandler(BaseHTTPRequestHandler):
             return
         try:
             project = smrtlink.get_new_project()
-            staging.new(project)
         except OutOfSyncError:
+            project = smrtlink.sync_projects()
+            # log
+        try:
+            staging.new(project)
+        except Exception as e:
             pass
 
     def do_DELETE(self):
@@ -90,16 +99,13 @@ class RequestHandler(BaseHTTPRequestHandler):
             self._respond_log_wait()
         except InvalidRequestError:
             return
-        project_id = _get_project_id(self.path)
-        if project_id:
-            pass
-        for rule_id in globus.get_project_access_rule_ids(project_id):
-            globus.delete_acl_rule(rule_id)
 
 class App(ThreadingHTTPServer):
 
     def __init__(self, server_address):
         super().__init__(server_address, RequestHandler)
+        projects = smrtlink.load_db()
+        staging.sync(projects)
 
     def run(self):
         self.serve_forever()
