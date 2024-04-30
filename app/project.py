@@ -114,8 +114,10 @@ class Project(pw.Model):
             if db_project: # get updates using database
                 self._get_updates(db_project)
                 self._update_db()
+                self.is_new = False
             else: # load instance data into database
                 self._insert_db()
+                self.is_new = True
         elif 'id' in kwargs and 'name' in kwargs: # internal instance, a.k.a. database instance
             super().__init__(*args, **kwargs) # populate instance with database data in kwargs
             assert hasattr(self, '_dataset_id_refs'), 'ProjectDataset foreign key backref not found'

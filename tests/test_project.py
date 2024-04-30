@@ -73,3 +73,9 @@ def test_update_project_remove_dataset(project_dicts_f):
     proj_updated = Project(**p_d)
     assert hasattr(proj_updated, 'datasets_to_remove')
     assert proj_updated.datasets_to_remove == [ds_removed['uuid']]
+
+def test_project_is_new():
+    proj = Project(**PROJECT)
+    assert proj.is_new
+    proj = Project(**PROJECT)
+    assert not proj.is_new
