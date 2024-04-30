@@ -1,32 +1,31 @@
 import logging
 import os
 import grp
-import dotenv
+import pwd
 import peewee as pw
 
-dotenv.load_dotenv() # load env vars before any imports
-
 from app.project import Project, ProjectDataset, ProjectMember
-from app import get_env_var, EnvVarNotFoundError
-from app.staging import DatasetDirectory
+from app import STAGING_ROOT, APP_USER, GROUP_NAME
+import app.smrtlink as smrtlink
+import app.globus as globus
+import app.staging as staging
 
-# report and exit if any environment variables are missing
-try:
-    import app.smrtlink as smrtlink
-    from app.globus import AccessRuleId
-    import app.globus as globus
-    get_env_var('GROUP_NAME')
-    get_env_var('APP_USER')
-except EnvVarNotFoundError as e:
-    print(e)
-    exit(1)
-
-# report and exit if any web clients failed to initialize
+# check that all modules have initialized properly
 if smrtlink.CLIENT is None:
     print('SMRT Link client failed to initialize')
     exit(1)
 if globus.TRANSFER_CLIENT is None:
     print('Globus transfer client failed to initialize')
+    exit(1)
+if not os.path.exists(STAGING_ROOT):
+    print(f"Staging root directory '{STAGING_ROOT}' specified in .env file does not exist")
+    exit(1)
+if not os.path.isdir(STAGING_ROOT):
+    print(f"Staging root directory '{STAGING_ROOT}' specified in .env file is not a directory")
+    exit(1)
+dir_owner = pwd.getpwuid(os.stat(STAGING_ROOT).st_uid).pw_name
+if dir_owner != APP_USER:
+    print(f"Staging root directory '{STAGING_ROOT}' is not owned by '{APP_USER}'")
     exit(1)
 
 # initialize and bind database to models
@@ -38,19 +37,24 @@ except Exception as e:
 Project.bind(db)
 ProjectDataset.bind(db)
 ProjectMember.bind(db)
-DatasetDirectory.bind(db)
-AccessRuleId.bind(db)
-db.create_tables([Project, ProjectDataset, ProjectMember, AccessRuleId, DatasetDirectory], safe=True)
+staging.DatasetDirectory.bind(db)
+globus.AccessRuleId.bind(db)
+db.create_tables([
+    Project, 
+    ProjectDataset, 
+    ProjectMember, 
+    globus.AccessRuleId, 
+    staging.DatasetDirectory],
+    safe=True)
 
 # check that the app is running as the correct group
-group_name = get_env_var('GROUP_NAME')
 try:
-    gid = grp.getgrnam(group_name).gr_gid
+    gid = grp.getgrnam(GROUP_NAME).gr_gid
 except KeyError:
-    print(f"Group '{group_name}' not found")
+    print(f"Group '{GROUP_NAME}' not found")
     exit(1)
 if gid != os.getgid():
-    print(f"App must be run as group '{group_name}'")
+    print(f"App must be run as group '{GROUP_NAME}'")
     exit(1)
 
 # set umask to 0 to give full permissions to group
