@@ -1,17 +1,14 @@
 import globus_sdk
 import peewee as pw
-from app import get_env_var
+from app import GLOBUS_CLIENT_ID, GLOBUS_CLIENT_SECRET, GLOBUS_COLLECTION_ID
 
-CLIENT_ID = get_env_var('GLOBUS_CLIENT_ID')
-CLIENT_SECRET = get_env_var('GLOBUS_CLIENT_SECRET')
-COLLECTION_ID = get_env_var('GLOBUS_COLLECTION_ID')
 ACL_CREATION_SCOPE='urn:globus:auth:scope:transfer.api.globus.org:all'
 
 def get_authorizer(scope):
     return globus_sdk.ClientCredentialsAuthorizer(
         globus_sdk.ConfidentialAppAuthClient(
-            CLIENT_ID,
-            CLIENT_SECRET
+            GLOBUS_CLIENT_ID,
+            GLOBUS_CLIENT_SECRET
         ),
         scope
     )
@@ -39,7 +36,7 @@ def add_access_rule(user_id, project_path, project_id):
         "permissions": "r",
     }
     try:
-        rule_id = TRANSFER_CLIENT.add_endpoint_acl_rule(COLLECTION_ID, rule_data)
+        rule_id = TRANSFER_CLIENT.add_endpoint_acl_rule(GLOBUS_COLLECTION_ID, rule_data)
         AccessRuleId.create(
                 rule_id=rule_id, 
                 project_id=project_id, 
@@ -51,7 +48,7 @@ def add_access_rule(user_id, project_path, project_id):
         pass # TODO Log the error
 
 def get_access_rules():
-    return TRANSFER_CLIENT.endpoint_acl_list(COLLECTION_ID)
+    return TRANSFER_CLIENT.endpoint_acl_list(GLOBUS_COLLECTION_ID)
 
 def _delete_access_rule(access_rule_id):
     '''
@@ -59,7 +56,7 @@ def _delete_access_rule(access_rule_id):
     Use case 2: access rule is too old (get rule id directly from Globus)
     '''
     try:
-        TRANSFER_CLIENT.delete_endpoint_acl_rule(COLLECTION_ID, access_rule_id)
+        TRANSFER_CLIENT.delete_endpoint_acl_rule(GLOBUS_COLLECTION_ID, access_rule_id)
     except globus_sdk.TransferAPIError:
         pass # TODO Log the error
     # delete from database

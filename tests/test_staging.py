@@ -12,20 +12,20 @@ from tests.test_project import PROJECT
 
 @pytest.fixture(autouse=True)
 def cleanup():
-    shutil.rmtree(staging.root, ignore_errors=True)
-    mkdir(staging.root)
+    shutil.rmtree(staging.ROOT_DIR, ignore_errors=True)
+    mkdir(staging.ROOT_DIR)
 
 def test_new():
     proj = Project(**PROJECT)
     staging.new(proj)
-    path = join(staging.root, str(proj.id), proj.name)
+    path = join(staging.ROOT_DIR, str(proj.id), proj.name)
     assert isdir(path), 'Project directory not created'
     path = join(path, proj.datasets['48a71a3e-c97c-43ea-ba41-8c2b31dd32b2'].dir_name())
-    assert isdir(join(staging.root, path)), 'Parent dataset directory not created'
+    assert isdir(join(staging.ROOT_DIR, path)), 'Parent dataset directory not created'
     assert DatasetDirectory.select().count() == 3
 
 def test_delete_dir():
-    path = staging.root + "/test_file_dir"
+    path = staging.ROOT_DIR + "/test_file_dir"
     os.mkdir(path)
     with open(f"{path}/test_file", "w") as f:
         pass
@@ -49,23 +49,23 @@ class TestProject:
         
 def test_update_rename():
     project = TestProject()
-    makedirs(join(staging.root, project.id, project.name))
+    makedirs(join(staging.ROOT_DIR, project.id, project.name))
     project.old_name = project.name
     project.name = "new_name"
     staging.update(project)
-    assert exists(join(staging.root, project.id, project.name))
+    assert exists(join(staging.ROOT_DIR, project.id, project.name))
 
 def test_update_add_datasets():
     project = TestProject()
     project.datasets_to_add = [1]
-    makedirs(join(staging.root, project.id, project.name))
+    makedirs(join(staging.ROOT_DIR, project.id, project.name))
     staging.update(project)
-    assert exists(join(staging.root, project.id, project.name, project.datasets[1].name))
+    assert exists(join(staging.ROOT_DIR, project.id, project.name, project.datasets[1].name))
 
 def test_datasets_to_remove():
     project = TestProject()
     project.names_of_datasets_to_remove = ["dataset1"]
-    makedirs(join(staging.root, project.id, project.name, project.datasets[1].name))
+    makedirs(join(staging.ROOT_DIR, project.id, project.name, project.datasets[1].name))
     staging.update(project)
-    assert not exists(join(staging.root, project.id, project.name, project.datasets[1].name))
+    assert not exists(join(staging.ROOT_DIR, project.id, project.name, project.datasets[1].name))
 

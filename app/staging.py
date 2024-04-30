@@ -3,11 +3,9 @@ import peewee as pw
 import pwd
 from os.path import join, basename, dirname, exists
 import app.globus as globus
-from app import get_env_var
+from app import STAGING_ROOT, APP_USER
 
-root = '/tmp/staging'
 PERMISSION=0o775
-APP_USER = get_env_var("APP_USER")
 
 class DatasetDirectory(pw.Model):
     dataset_id = pw.UUIDField()
@@ -64,7 +62,7 @@ def new(project):
     Gets called in response to a POST request. Creates directories for the project root, id, and name.
     Then creates and stages a directory for each dataset in a project's dataset_ids attribute based on the uuids.
     """
-    project_dir = join(root, str(project.id), project.name)
+    project_dir = join(STAGING_ROOT, str(project.id), project.name)
     make_dir(project_dir)
     for dataset in project:
         dataset_dir = join(project_dir, dataset.dir_name())
@@ -76,7 +74,7 @@ def get_project_path(project):
     """
     Gets the project path by joining the root directory to the project id and project name.
     """
-    project_path = join(root, project.id, project.name)
+    project_path = join(STAGING_ROOT, project.id, project.name)
     return project_path
 
 def rename_project(project):
