@@ -7,9 +7,9 @@ from requests import request
 import pytest
 import logging
 import threading
-import sys
 
-from app.server import App
+from app.project import Project
+from app.server import App, new_project
 import app
 
 app_log = []
@@ -23,32 +23,41 @@ app.logger.handlers = [ListHandler()]
 
 APP_PORT = 9093
 
-@pytest.fixture(autouse=True)
-def setup():
+def do_request(method, path):
+    try:
+        response = request(method, f"http://localhost:{APP_PORT}{path}")
+        return response.status_code
+    except Exception as e:
+        raise Exception(f'Request "{method} {path}" failed: {e}')
+
+def test_RequestHandler():
+    # get the server running
     try:
         app = App(('localhost', APP_PORT))
     except OSError as e:
         raise Exception(f"Port {APP_PORT} was probably already in use.")
     app_thread = threading.Thread(target=app.run)
     app_thread.start()
-    yield
+
+    # send some invalid requests
+    assert do_request("POST", "/smrt-link/projects/1") == 404
+    assert do_request("PUT", "/smrt-link/projects") == 404
+    assert do_request("DELETE", "/smrt-link/projects") == 404
+
+    # send some valid requests
+    assert do_request("GET", "/") == 200
+    assert do_request("POST", "/smrt-link/projects") == 200
+    assert do_request("PUT", "/smrt-link/projects/1") == 405
+    assert do_request("DELETE", "/smrt-link/projects/1") == 405
+    assert do_request("PUT", "/smrt-link/projects/2") == 200
+    assert do_request("DELETE", "/smrt-link/projects/2") == 200
+
+    # stop the server
     app.stop()
     app_thread.join()
     app_log.clear()
 
-def valid_request(method, path):
-    try:
-        response = request(method, f"http://localhost:{APP_PORT}{path}")
-        return True if response.status_code == 200 else False
-    except Exception as e:
-        raise Exception(f'Request "{method} {path}" failed: {str(e)}', file=sys.stderr)
-
-def test():
-    assert not valid_request("POST", "/smrt-link/projects/1")
-    assert not valid_request("PUT", "/smrt-link/projects")
-    assert not valid_request("DELETE", "/smrt-link/projects")
-    assert valid_request("GET", "/")
-    assert valid_request("POST", "/smrt-link/projects")
-    assert valid_request("PUT", "/smrt-link/projects/1")
-    assert valid_request("DELETE", "/smrt-link/projects/1")
-    assert len(app_log) == 7
+def test_new_project():
+    project = Project()
+    from app.smrtlink import get_new_project
+    get_new_project = lambda x: project
