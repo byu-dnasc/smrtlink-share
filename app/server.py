@@ -40,6 +40,7 @@ def update_project(project_id):
     except OutOfSyncError as e:
         logger.info(f'App is Out-of-Sync with SMRT Link: {e.message}')
         stage_new_project(e.project)
+        return
     except Exception as e:
         logger.error(f'Cannot handle project update request: {e}.')
         return
@@ -58,13 +59,13 @@ class RequestHandler(BaseHTTPRequestHandler):
             if self.command == 'POST':
                 logger.info(f'Received notification that a new project was created in SMRT Link')
             elif self.command == 'PUT':
-                logger.info(f'Received notification that project {_get_project_id(self.path)} was modified in SMRT Link')
+                logger.info(f'Received notification that project {self.project_id} was modified in SMRT Link')
             elif self.command == 'DELETE':
-                logger.info(f'Received notification that project {_get_project_id(self.path)} was deleted in SMRT Link')
+                logger.info(f'Received notification that project {self.project_id} was deleted in SMRT Link')
             else:
                 logger.info(f'Received request: {self.command} {self.path}')
         elif response_code == 405:
-            logger.info(f'Received request to stage project 1, which is not supported.')
+            logger.info(f'Received request concerning project 1, which is not supported.')
         else:
             logger.info(f'Received invalid request: {self.command} {self.path}')
     
