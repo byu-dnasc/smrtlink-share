@@ -27,6 +27,9 @@ class OutOfSyncError(Exception):
         super().__init__(message)
         self.project = project
         self.message = message
+    
+    def __str__(self) -> str:
+        return f'{self.message}'
 
 logger = logging.getLogger('smrtlink-share')
 logger.setLevel(logging.INFO)
