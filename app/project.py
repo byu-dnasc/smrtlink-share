@@ -41,13 +41,13 @@ class Project(pw.Model):
 
     def _update_db(self):
         '''Add or remove datasets and members from the database.'''
-        self.save() # update project name
+        super().save() # update project name
         if hasattr(self, 'datasets_to_add'):
             for uuid in self.datasets_to_add:
                 (ProjectDataset.insert(project_id=self.id, 
                                       dataset_id=uuid)
                                .execute())
-        if hasattr(self, '_ids_of_datasets_to_remove'):
+        if hasattr(self, 'datasets_to_remove'):
             (ProjectDataset.delete()
                             .where(ProjectDataset.project_id == self.id,
                                    ProjectDataset.dataset_id.in_(self.datasets_to_remove))
@@ -63,7 +63,7 @@ class Project(pw.Model):
     
     def _insert_db(self):
         '''Insert a new project into the database.'''
-        self.save(force_insert=True)
+        super().save(force_insert=True)
         dataset_rows = [{'project_id': self.id, 
                          'dataset_id': ds.id} 
                          for ds in self.datasets.values()]
@@ -72,6 +72,12 @@ class Project(pw.Model):
                         'member_id': member} 
                         for member in self.members]
         ProjectMember.insert_many(member_rows).execute()
+    
+    def save(self, *args):
+        if self.is_new:
+            self._insert_db()
+        else:
+            self._update_db()
 
     def __init__(self, *args, **kwargs):
         '''
@@ -113,10 +119,8 @@ class Project(pw.Model):
             db_project = Project.get_or_none(Project.id == self.id)
             if db_project: # get updates using database
                 self._get_updates(db_project)
-                self._update_db()
                 self.is_new = False
             else: # load instance data into database
-                self._insert_db()
                 self.is_new = True
         elif 'id' in kwargs and 'name' in kwargs: # internal instance, a.k.a. database instance
             super().__init__(*args, **kwargs) # populate instance with database data in kwargs
