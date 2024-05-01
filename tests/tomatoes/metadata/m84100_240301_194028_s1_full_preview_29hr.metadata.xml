@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PacBioDataModel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="4.0.1" xmlns="http://pacificbiosciences.com/PacBioDataModel.xsd">
+  <ExperimentContainer CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00">
+    <InvestigatorName>Default</InvestigatorName>
+    <CreatedDate>2024-03-01</CreatedDate>
+    <Runs>
+      <Run Name="Run 03.01.2024 11:32" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" UniqueId="f4d6a5ed-dbef-455d-a369-14e51f5f9d76" MetaType="Run" TimeStampedName="r84100_20240301_193255" Status="Running" ChipType="25mChip" InstrumentType="Revio" CreatedBy="edwilcox" StartedBy="unknown" WhenStarted="2024-03-01T19:33:22.7904251Z">
+        <Outputs>
+          <SubreadSets>
+            <SubreadSet Name="Germany tomato 20 and 21-Cell1" CreatedAt="2024-03-01T18:53:03.446+00:00" UniqueId="1b7232bc-363b-4810-b6d2-906ac9f38b53" MetaType="SubreadSetCollection" TimeStampedName="84100-SubreadSetCollection-2024-03-01T19:32:55.809Z" xmlns="http://pacificbiosciences.com/PacBioDatasets.xsd">
+              <ExternalResources xmlns="http://pacificbiosciences.com/PacBioBaseDataModel.xsd">
+                <ExternalResource UniqueId="e9195cc7-4ba4-475a-85fd-f118d6073854" MetaType="ExternalResource" TimeStampedName="84100-ExternalResource-2024-03-01T19:32:55.809Z" />
+              </ExternalResources>
+              <DataSetMetadata>
+                <TotalLength>0</TotalLength>
+                <NumRecords>0</NumRecords>
+                <Collections xmlns="http://pacificbiosciences.com/PacBioCollectionMetadata.xsd">
+                  <CollectionMetadata CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" UniqueId="1b7232bc-363b-4810-b6d2-906ac9f38b53" MetaType="CollectionMetadata" TimeStampedName="84100-CollectionMetadata-2024-03-01T19:32:55.809Z" Context="m84100_240301_194028_s1" Status="Acquiring" InstrumentId="84100" InstrumentName="84100">
+                    <MultiJobId>0</MultiJobId>
+                    <ProjectId>1</ProjectId>
+                    <ConsensusReadSetRef UniqueId="48a71a3e-c97c-43ea-ba41-8c2b31dd32b2" />
+                    <RunDetails>
+                      <TimeStampedName>r84100_20240301_193255</TimeStampedName>
+                      <Name>Run 03.01.2024 11:32</Name>
+                      <CreatedBy>edwilcox</CreatedBy>
+                      <WhenCreated>2024-03-01T18:53:03.446+00:00</WhenCreated>
+                      <StartedBy>unknown</StartedBy>
+                      <WhenStarted>2024-03-01T19:33:22.7904251Z</WhenStarted>
+                    </RunDetails>
+                    <WellSample Name="Germany tomato 20 and 21" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00">
+                      <WellName>A01</WellName>
+                      <Application>hifiReads</Application>
+                      <Concentration>0</Concentration>
+                      <OnPlateLoadingConcentration>320</OnPlateLoadingConcentration>
+                      <InsertSize>13000</InsertSize>
+                      <IsoSeq>false</IsoSeq>
+                      <IsCCS>true</IsCCS>
+                      <SampleReuseEnabled>false</SampleReuseEnabled>
+                      <StageHotstartEnabled>false</StageHotstartEnabled>
+                      <SizeSelectionEnabled>false</SizeSelectionEnabled>
+                      <UseCount>0</UseCount>
+                      <DNAControlComplex>Revio sequencing control</DNAControlComplex>
+                      <BioSamples xmlns="http://pacificbiosciences.com/PacBioSampleInfo.xsd">
+                        <BioSample Name="Tomato 20">
+                          <DNABarcodes>
+                            <DNABarcode Name="bc1047--bc1047" UniqueId="e950eeb9-b402-4776-84e1-9a9905aa781b" />
+                          </DNABarcodes>
+                        </BioSample>
+                        <BioSample Name="Tomato 21">
+                          <DNABarcodes>
+                            <DNABarcode Name="bc1048--bc1048" UniqueId="7626fccc-b141-49f9-8d30-39302efe8d6a" />
+                          </DNABarcodes>
+                        </BioSample>
+                      </BioSamples>
+                    </WellSample>
+                    <Automation Name="Workflow_Kestrel.py">
+                      <AutomationParameters xmlns="http://pacificbiosciences.com/PacBioBaseDataModel.xsd">
+                        <AutomationParameter Name="MovieLength" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Double" SimpleValue="1800.0" />
+                        <AutomationParameter Name="DynamicLoadingCognate" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="String" SimpleValue="True" />
+                        <AutomationParameter Name="ReuseCell" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Boolean" SimpleValue="False" />
+                        <AutomationParameter Name="TotalSamples" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Int32" SimpleValue="2" />
+                        <AutomationParameter Name="InsertSize" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Int32" SimpleValue="13000" />
+                        <AutomationParameter Name="PCDinPlate" ValueDataType="Boolean" SimpleValue="True" />
+                        <AutomationParameter Name="UsePredictiveLoadingBuffer" ValueDataType="Boolean" SimpleValue="True" />
+                        <AutomationParameter Name="CollectionNumber" ValueDataType="Int32" SimpleValue="0" />
+                        <AutomationParameter Name="BindingKitPartNumber" ValueDataType="String" SimpleValue="102-739-100" />
+                        <AutomationParameter Name="TipSearchMaxDuration" ValueDataType="Int32" SimpleValue="576" />
+                        <AutomationParameter Name="PPAEstimatedDuration" ValueDataType="Double" SimpleValue="840" />
+                        <AutomationParameter Name="PPAMinDuration" ValueDataType="Double" SimpleValue="660.1800000000001" />
+                        <AutomationParameter Name="PPAMaxDuration" ValueDataType="Double" SimpleValue="1019.82" />
+                        <AutomationParameter Name="PPATimeout" ValueDataType="Double" SimpleValue="3900" />
+                        <AutomationParameter Name="CCSOverheadDurationMinutesPerUmyGBase" ValueDataType="Double" SimpleValue="0.2" />
+                        <AutomationParameter Name="SNRCut" ValueDataType="Double" SimpleValue="1.5" />
+                        <AutomationParameter Name="HQRFMethod" ValueDataType="String" SimpleValue="N2" />
+                        <AutomationParameter Name="DynamicLoadingTotalTimeSeconds" ValueDataType="Double" SimpleValue="4050.4517551" />
+                        <AutomationParameter Name="DynamicLoadingTimeZero" ValueDataType="String" SimpleValue="3/1/2024 7:53:38 PM" />
+                        <AutomationParameter Name="DynamicLoadingServiceStartTime" ValueDataType="String" SimpleValue="3/1/2024 8:06:08 PM" />
+                        <AutomationParameter Name="DynamicLoadingServiceTotalTimeSeconds" ValueDataType="Double" SimpleValue="3300.0000068" />
+                      </AutomationParameters>
+                      <Defaults xmlns="http://pacificbiosciences.com/PacBioBaseDataModel.xsd" />
+                    </Automation>
+                    <CollectionNumber>0</CollectionNumber>
+                    <CellIndex>0</CellIndex>
+                    <SetNumber>0</SetNumber>
+                    <CellPac Name="Revio SMRT Cell tray" Description="Tray of 4 Revio SMRT Cells for sequencing on the Revio system." Version="1.0" PartNumber="102-202-200" LotNumber="1000002020" LabelNumber="EA091912" Barcode="EA091912" ExpirationDate="2024-10-29" MovieTimeGrade="LR">
+                      <ChipLayout xmlns="http://pacificbiosciences.com/PacBioBaseDataModel.xsd">KestrelRTO2</ChipLayout>
+                    </CellPac>
+                    <ControlKit Name="Revio sequencing control" Description="The Revio polymerase kit sequencing control contains a fixed 11 kb template bound to polymerase for use as a spike-in control." Tags="Control Kit, CCK" Version="1.0" PartNumber="102-798-000" LotNumber="Lxxxxx" Barcode="Lxxxxx102798000123199" ExpirationDate="2099-12-31" ChipType="25mChip">
+                      <CustomSequence xmlns="http://pacificbiosciences.com/PacBioBaseDataModel.xsd">&gt;left_adapter\nTAGAGAGAGAAAAGGAGGAGGAGGCAACAACAACAACTCTCTCTA\n&gt;right_adapter\nTAGAGAGAGAAAAGGAGGAGGAGGCAACAACAACAACTCTCTCTA\n&gt;custom_sequence\nTCCCGACTGGAAAGCGGGCAGTGAGCGCAACGCAATTAATGTGAGTTAGCTCACTCATTAGGCACCCCAGGCTTTACACTTTATGCTTCCGGCTCGTATGTTGTGTGGAATTGTGAGCGGATAACAATTTCACACAGGAAACAGCTATGACCATGATTACGCCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCCCTGGCCGCATCCAGACTCAAATCAACGACCAGATCGCCTACCGGTTCAGCCATACCGGACTCCTCCTGCGATCCCTTCTGATACTGTCATCAGCATTACGTCATCCTCCGTCATGTCCGCCACATCCGGGGAAGCGGGGATAACTTCATTCCCGTCCGGGCCAAAGCGGACACCTCCGGCAAGCCCTGCCGCTTTCTGCAGCAGGCTCGCCAGCAGCGCACTGAGATCCAGCTGCCAGCGGGAAATACTGATGCGCAGCGCCGCCAGCGCATAAACGAAGCAGTCGAGTGCCTCATTGCGTCGCTTTTTGCTGTCCCACAGTATTTTTTTCCTGCCATCCACCCATTTTTCGACCTGCTCTTCAGCAGTCAGCTGCTGCGCTTCGGTCAGATCAAAAATAGGGTACCGAGCTCGAATTCACTGGCCGTCGTTTTACAACGTCGTGACTGGGAAAACCCTGGCGTTACCCAACTTAATCGCCTTGCAGCACATCCCCCTTTCGCCAGCTGGCGTAATAGCGAAGAGGCCCGCACCGATCGCCCTTCCCAACAGTTGCGCAGCCTGAATGGCGAATGGCGCCTGATGCGGTATTTTCTCCTTA</CustomSequence>
+                    </ControlKit>
+                    <TemplatePrepKit Name="SMRTbell® Prep Kit - Revio" Description="The SMRTbell® Prep Kit contains reagent supplies to perform SMRTbell library preparations of primer-annealed SMRTbell libraries for insert sizes ranging from 500 bp to over 20 kb." Tags="Template Prep Kit, TPK" Version="1.0" PartNumber="999-999-001" LotNumber="Lxxxxx" Barcode="Lxxxxx999999001123199" ExpirationDate="2099-12-31" ChipType="25mChip" MinInsertSize="500" MaxInsertSize="20000">
+                      <LeftAdaptorSequence xmlns="http://pacificbiosciences.com/PacBioBaseDataModel.xsd">CAACAACAACAACGGAGGAGGAGGAAAAG</LeftAdaptorSequence>
+                      <LeftPrimerSequence xmlns="http://pacificbiosciences.com/PacBioBaseDataModel.xsd">aacggaggaggagga</LeftPrimerSequence>
+                      <RightAdaptorSequence xmlns="http://pacificbiosciences.com/PacBioBaseDataModel.xsd">CAACAACAACAACGGAGGAGGAGGAAAAG</RightAdaptorSequence>
+                      <RightPrimerSequence xmlns="http://pacificbiosciences.com/PacBioBaseDataModel.xsd">aacggaggaggagga</RightPrimerSequence>
+                    </TemplatePrepKit>
+                    <BindingKit Name="Revio polymerase kit" Description="The Revio polymerase kit contains reagents for binding polymerase to SMRTbell libraries for sequencing on the Revio system." Tags="Binding Kit, BDK" Version="1.0" PartNumber="102-739-100" LotNumber="Lxxxxx" Barcode="Lxxxxx102739100123199" ExpirationDate="2099-12-31" ChipType="25mChip" />
+                    <SequencingKitPlate Name="Revio sequencing plate" Description="Sequencing reagents supporting 4 Revio SMRT Cells." Tags="Sequencing Kit, SQK" Version="1.0" PartNumber="102-118-800" LotNumber="034063" LabelNumber="00723" PlateNumber="1" Barcode="034063102118800081624" ExpirationDate="2024-08-16" ChipType="25mChip" MaxCollections="4" ActiveHours="0.8434429984166667" ActiveHoursLimit="336" NumOilTubes="0" NumOseTubes="0" SupportsDynamicLoading="true" />
+                    <Primary>
+                      <AutomationName>SequelAlpha</AutomationName>
+                      <ConfigFileName>SqlPoC_SubCrf_2C2A-t2.xml</ConfigFileName>
+                      <SequencingCondition>DefaultPrimarySequencingCondition</SequencingCondition>
+                      <CCSOptions>
+                        <ExecutionMode>OnInstrument</ExecutionMode>
+                        <IncludeKinetics>false</IncludeKinetics>
+                      </CCSOptions>
+                      <OutputOptions>
+                        <ResultsFolder>r84100_20240301_193255/1_A01/</ResultsFolder>
+                        <CollectionPathUri>/fslgroup/fslg_dnasc/compute/r84100_20240301_193255/1_A01/</CollectionPathUri>
+                        <CopyFiles>
+                          <CollectionFileCopy>Bam</CollectionFileCopy>
+                          <CollectionFileCopy>Fasta</CollectionFileCopy>
+                        </CopyFiles>
+                        <Readout>Bases_Without_QVs</Readout>
+                        <MetricsVerbosity>Minimal</MetricsVerbosity>
+                        <TransferResource>
+                          <Id>56bfecd2-080a-42a2-8d5c-de3efa4da9fd</Id>
+                          <TransferScheme>SRS</TransferScheme>
+                          <Name>byu-revio</Name>
+                          <Description>byu-revio</Description>
+                          <DestPath>/fslgroup/fslg_dnasc/compute</DestPath>
+                        </TransferResource>
+                      </OutputOptions>
+                    </Primary>
+                    <Secondary>
+                      <AutomationName>SMRTLinkRunDesign</AutomationName>
+                      <AutomationParameters>
+                        <AutomationParameter Name="SourceId" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="String" SimpleValue="smrtlink-rest-api" />
+                        <AutomationParameter Name="CCS" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Boolean" SimpleValue="True" />
+                        <AutomationParameter Name="CCSMode" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="String" SimpleValue="OnInstrument" />
+                        <AutomationParameter Name="Kinetics" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Boolean" SimpleValue="False" />
+                        <AutomationParameter Name="AllReads" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Boolean" SimpleValue="True" />
+                        <AutomationParameter Name="Demultiplex" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Boolean" SimpleValue="True" />
+                        <AutomationParameter Name="DemultiplexMode" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="String" SimpleValue="OnInstrument" />
+                        <AutomationParameter Name="BarcodesUuid" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="String" SimpleValue="fa9e7121-a74b-bf12-e4b0-f37e5e0ed71b" />
+                        <AutomationParameter Name="DemultiplexPreset" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="String" SimpleValue="SYMMETRIC-ADAPTERS" />
+                        <AutomationParameter Name="FullResolutionBaseQual" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Boolean" SimpleValue="False" />
+                        <AutomationParameter Name="SubreadToHiFiPileup" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Boolean" SimpleValue="False" />
+                        <AutomationParameter Name="ByStrand" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Boolean" SimpleValue="False" />
+                        <AutomationParameter Name="CpG" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Boolean" SimpleValue="True" />
+                        <AutomationParameter Name="AAV" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Boolean" SimpleValue="False" />
+                        <AutomationParameter Name="Heteroduplex" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Boolean" SimpleValue="False" />
+                        <AutomationParameter Name="SampleSubreadsPct" CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="Int32" SimpleValue="0" />
+                      </AutomationParameters>
+                      <BarcodesFasta>PmJjMTAwMQpDQUNBVEFUQ0FHQUdUR0NHCj5iYzEwMDIKQUNBQ0FDQUdBQ1RHVEdBRwo+YmMxMDAzCkFDQUNBVENUQ0dUR0FHQUcKPmJjMTAwNApDQUNHQ0FDQUNBQ0dDR0NHCj5iYzEwMDUKQ0FDVENHQUNUQ1RDR0NHVAo+YmMxMDA2CkNBVEFUQVRBVENBR0NUR1QKPmJjMTAwNwpUQ1RHVEFUQ1RDVEFUR1RHCj5iYzEwMDgKQUNBR1RDR0FHQ0dDVEdDRwo+YmMxMDA5CkFDQUNBQ0dDR0FHQUNBR0EKPmJjMTAxMApBQ0dDR0NUQVRDVENBR0FHCj5iYzEwMTEKQ1RBVEFDR1RBVEFUQ1RBVAo+YmMxMDEyCkFDQUNUQUdBVENHQ0dUR1QKPmJjMTAxMwpDVENUQ0dDQVRBQ0dDR0FHCj5iYzEwMTQKQ1RDQUNUQUNHQ0dDR0NHVAo+YmMxMDE1CkNHQ0FUR0FDQUNHVEdUR1QKPmJjMTAxNgpDQVRBR0FHQUdBVEFHVEFUCj5iYzEwMTcKQ0FDQUNHQ0dDR0NUQVRBVAo+YmMxMDE4ClRDQUNHVEdDVENBQ1RHVEcKPmJjMTAxOQpBQ0FDQUNUQ1RBVENBR0FUCj5iYzEwMjAKQ0FDR0FDQUNHQUNHQVRHVAo+YmMxMDIxCkNUQVRBQ0FUQUdUR0FUR1QKPmJjMTAyMgpDQUNUQ0FDR1RHVEdBVEFUCj5iYzEwMjMKQ0FHQUdBR0FUQVRDVENURwo+YmMxMDI0CkNBVEdUQUdBR0NBR0FHQUcKPmJjMTAyNQpDR0NHQUNBQ0dDVENHQ0dDCj5iYzEwMjYKQ0FDQUdBR0FDQUNHQ0FDQQo+YmMxMDI3CkNUQ0FDQUNUQ1RDVENBQ0EKPmJjMTAyOApDVENUR0NUQ1RHQUNUQ1RDCj5iYzEwMjkKVEFUQVRBVEdUQ1RBVEFHQQo+YmMxMDMwClRDVENUQ1RBVENHQ0dDVEMKPmJjMTAzMQpHQVRHVENUR0FHVEdUR1RHCj5iYzEwMzIKR0FHQUNUQUdBR0FUQUdURwo+YmMxMDMzClRDVENHVENHQ0FHVENUQ1QKPmJjMTAzNApBVEdUR1RBVEFUQUdBVEFUCj5iYzEwMzUKR0NHQ0dDR0NBQ1RDVENURwo+YmMxMDM2CkdBR0FDQUNHVENHQ0FDQUMKPmJjMTAzNwpBQ0FDQVRBVENHQ0FDVEFDCj5iYzEwMzgKR1RHVEdUQ1RDR0FUR0NHQwo+YmMxMDM5CkNHQ0FDQUNBVEFHQVRBQ0EKPmJjMTA0MApUR1RDQVRBVEdBR0FHVEdUCj5iYzEwNDEKVENUQ0dDR0NHVEdDQUNHQwo+YmMxMDQyCkNUQ0dDVENHQUNHQUdDR0MKPmJjMTA0MwpUQVRBR0FHQ1RDVEFDQVRBCj5iYzEwNDQKR0NUR0FHQUNHQUNHQ0dDRwo+YmMxMDQ1CkFDQVRBVENHVEFDVENUQ1QKPmJjMTA0NgpHQVRBVEFUQ0dBR1RBVEFUCj5iYzEwNDcKVEdUQ0FUR1RHVEFDQUNBQwo+YmMxMDQ4CkdUR1RHQ0FDVENBQ0FDVEMKPmJjMTA0OQpBQ0FDR1RHVEdDVENUQ1RDCj5iYzEwNTAKR0FUQVRBQ0dDR0FHQUdBRwo+YmMxMDUxCkNHVEdUQ1RBR0NHQ0dDR0MKPmJjMTA1MgpHVEdUR0FHQVRBVEFUQVRDCj5iYzEwNTMKQ1RDQUNHVEFDR1RDQUNBQwo+YmMxMDU0CkdDR0NBQ0dDQUNUQUNBR0EKPmJjMTA1NQpDQUNBQ0dBR0FUQ1RDQVRDCj5iYzEwNTYKQUdBQ0FDQUNBQ0dDQUNBVAo+YmMxMDU3CkdBQ0dBR0NHVENUR0FHQUcKPmJjMTA1OApUR1RHVENUQ1RHQUdBR1RBCj5iYzEwNTkKQ0FDQUNHQ0FDVEdBR0FUQQo+YmMxMDYwCkdBVEdBR1RBVEFHQUNBQ0EKPmJjMTA2MQpHQ1RHVEdUR1RHQ1RDR1RDCj5iYzEwNjIKVENUQ0FHQVRBR1RDVEFUQQo+YmMxMDYzCkFDQUNHQ0FUR0FDQUNBQ1QKPmJjMTA2NApUQVRBVEFDQUdBR1RDR0FHCj5iYzEwNjUKR0NHQ1RDVENUQ0FDQVRBQwo+YmMxMDY2ClRBVEFUR0NUQ1RHVEdUR0EKPmJjMTA2NwpDVENUQVRBVEFUQ1RDR1RDCj5iYzEwNjgKQUdBR0FHQ1RDVENUQ0FUQwo+YmMxMDY5CkdDR0FHQUdUR0FHQUNHQ0EKPmJjMTA3MApUR0NUQ1RDR1RHVEFDVEdUCj5iYzEwNzEKQUdDR0NUR0NHQUNBQ0dDRwo+YmMxMDcyCkFHQUNHQ0dBR0NHQ0dUQUcKPmJjMTA3MwpHQ0dUR1RHVENHQUdUR1RBCj5iYzEwNzQKVEdUQUNHQ1RDVENUQVRBVAo+YmMxMDc1ClRBR0FHQUdDR1RDR0NHVEcKPmJjMTA3NgpHVEdDQUNUQ0dDR0NUQ1RDCj5iYzEwNzcKVEFUQ1RDVENHQUdUQ0dDRwo+YmMxMDc4CkNUQ0FDQUNBVEFDQUNHVEMKPmJjMTA3OQpBVEFHVEFDQUNUQ1RHVEdUCj5iYzEwODAKVEFUQ1RDVEdUQUdBR1RDVAo+YmMxMDgxCkdBVEFUQVRBVEdUR1RHVEEKPmJjMTA4MgpHVEdBQ0FDQUNBR0FHQ0FDCj5iYzEwODMKQVRBVEdBQ0FUQUNBQ0dDQQo+YmMxMDg0CkNHVENUQ1RDR1RDVEdUR0MKPmJjMTA4NQpBQ0FDQUdUQUdBR0NHQUdDCj5iYzEwODYKR1RDR0NHQ0FUQUdBR0NHQwo+YmMxMDg3CkNUQVRDVEFHQ0FDVENBQ0EKPmJjMTA4OApDR1RHVENBQ1RDVEdDR1RHCj5iYzEwODkKQ0dDR0NHQUdUQVRDVENHVAo+YmMxMDkwCkFHQ0FDQUNBVEFUQUdDR0MKPmJjMTA5MQpHVEFUQVRBVEFUQUNHVENUCj5iYzEwOTIKVENUQ0FDR0FHQUdDR0NBQwo+YmMxMDkzClRBR0FUR0NHQUdBR1RBR0EKPmJjMTA5NApBVEFHQ0dBQ0FUQ1RDVENUCj5iYzEwOTUKR0NBQ0dBVEdUQ0FHQ0dDRwo+YmMxMDk2ClRHVEdDVENUQ1RBQ0FDQUcK</BarcodesFasta>
+                    </Secondary>
+                    <UserDefinedFields>
+                      <DataEntities Name=" LIMS_IMPORT " CreatedAt="2024-03-01T18:53:03.446+00:00" ModifiedAt="0001-01-01T00:00:00" ValueDataType="String" SimpleValue="DefaultUserDefinedFieldLIMS" xmlns="http://pacificbiosciences.com/PacBioBaseDataModel.xsd" />
+                    </UserDefinedFields>
+                    <ComponentVersions>
+                      <VersionInfo Name="ics" Version="13.0.0.212033" />
+                      <VersionInfo Name="iui" Version="Unknown" />
+                      <VersionInfo Name="chemistry" Version="13.0.0.205983" />
+                      <VersionInfo Name="pa" Version="13.0.0.212033" />
+                      <VersionInfo Name="basecaller" Version="13.0.0" />
+                      <VersionInfo Name="baz2bam" Version="release/kestrel-13_002388e6797af47f3ebff3ecb52a2da1e62080c5-dirty" />
+                      <VersionInfo Name="ccs" Version="ccs 8.0.0 (commit v8.0.0)&#xA;&#xA;Using:&#xA;  unanimity : 8.0.0 (commit v8.0.0)&#xA;  pbbam     : 2.5.0 (commit v2.5.0)&#xA;  pbcopper  : 2.4.0 (commit v2.4.0)&#xA;  pancake   : 2.2.0 (commit v2.2.0)&#xA;  pbsparc   : 1.1.0 (commit v1.1.0)&#xA;  pbdc      : 1.3.1 (commit v1.3.1)&#xA;  boost     : 1.81&#xA;  htslib    : 1.17&#xA;  zlib      : 1.2.13" />
+                      <VersionInfo Name="jasmine" Version="jasmine 2.2.0&#xA;&#xA;Using:&#xA;  jasmine     : 2.2.0 (commit v2.2.0)&#xA;  pbbam       : 2.5.0 (commit v2.5.0)&#xA;  pbcopper    : 2.4.0 (commit v2.4.0)&#xA;  pbort       : 1.0.0 (commit v1.0.0)&#xA;  boost       : 1.81&#xA;  htslib      : 1.17&#xA;  onnxruntime : 1.11.0&#xA;  zlib        : 1.2.13" />
+                      <VersionInfo Name="lima" Version="lima 2.9.0&#xA;&#xA;Using:&#xA;  lima      : 2.9.0 (commit v2.9.0)&#xA;  pbbam     : 2.5.0 (commit v2.5.0)&#xA;  pbcopper  : 2.4.0 (commit v2.4.0)&#xA;  boost     : 1.81&#xA;  htslib    : 1.17&#xA;  zlib      : 1.2.13" />
+                      <VersionInfo Name="pa-cal" Version="13.0.0.002388e6797af47f3ebff3ecb52a2da1e62080c5-dirty" />
+                      <VersionInfo Name="pa-wsgo" Version="13.0.2-0fe811ceb7ddd492390327f845a31332a049119c" />
+                      <VersionInfo Name="pawnee" Version="pawnee 1.3.8 (commit v1.3.8)" />
+                      <VersionInfo Name="reducestats" Version="release/kestrel-13_002388e6797af47f3ebff3ecb52a2da1e62080c5-dirty" />
+                      <VersionInfo Name="samtools" Version="samtools 1.17&#xA;Using htslib 1.17&#xA;Copyright (C) 2023 Genome Research Ltd.&#xA;&#xA;Samtools compilation details:&#xA;    Features:       build=configure curses=no &#xA;    CC:             gcc&#xA;    CPPFLAGS:       -I/var/lib/bamboo/bamboo-agent-home/xml-data/build-dir/RBREVIO-K13REVINST-SAM/software/include&#xA;    CFLAGS:         -Wall -g -O2&#xA;    LDFLAGS:        -L/var/lib/bamboo/bamboo-agent-home/xml-data/build-dir/RBREVIO-K13REVINST-SAM/software/lib&#xA;    HTSDIR:         htslib-1.17&#xA;    LIBS:           &#xA;    CURSES_LIB:     &#xA;&#xA;HTSlib compilation details:&#xA;    Features:       build=configure libcurl=no S3=no GCS=no libdeflate=no lzma=no bzip2=no plugins=no htscodecs=1.4.0&#xA;    CC:             gcc&#xA;    CPPFLAGS:       -I/var/lib/bamboo/bamboo-agent-home/xml-data/build-dir/RBREVIO-K13REVINST-SAM/software/include&#xA;    CFLAGS:         -Wall -g -O2 -fvisibility=hidden&#xA;    LDFLAGS:        -L/var/lib/bamboo/bamboo-agent-home/xml-data/build-dir/RBREVIO-K13REVINST-SAM/software/lib -fvisibility=hidden &#xA;&#xA;HTSlib URL scheme handlers present:&#xA;    built-in:&#x9; preload, data, file&#xA;    crypt4gh-needed:&#x9; crypt4gh&#xA;    mem:&#x9; mem" />
+                      <VersionInfo Name="smrtlink-analysisservices-gui" Version="13.0.0.207600" />
+                      <VersionInfo Name="smrtimisc" Version="13.0.0.207600" />
+                      <VersionInfo Name="smrttools" Version="13.0.0.207600" />
+                      <VersionInfo Name="smrtlink" Version="13.0.0.207600" />
+                      <VersionInfo Name="smrtinub" Version="13.0.0.207600" />
+                    </ComponentVersions>
+                  </CollectionMetadata>
+                </Collections>
+              </DataSetMetadata>
+            </SubreadSet>
+          </SubreadSets>
+        </Outputs>
+      </Run>
+    </Runs>
+  </ExperimentContainer>
+</PacBioDataModel>

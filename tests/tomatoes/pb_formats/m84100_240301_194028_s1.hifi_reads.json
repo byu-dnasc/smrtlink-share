@@ -1,0 +1,31 @@
+{
+  "createdAt": "2024-03-03T11:58:47.590Z",
+  "files": [
+    {
+      "createdAt": "2024-03-03T11:58:45.808Z",
+      "description": "Split BAM file by lima",
+      "fileSize": -1944751625,
+      "fileTypeId": "PacBio.DataSet.ConsensusReadSet",
+      "isChunked": false,
+      "modifiedAt": "2024-03-03T11:58:45.808Z",
+      "name": "Barcodes bc1047--bc1047",
+      "path": "m84100_240301_194028_s1.hifi_reads.bc1047.consensusreadset.xml",
+      "sourceId": "barcoding.tasks.lima-0",
+      "uniqueId": "e950eeb9-b402-4776-84e1-9a9905aa781b"
+    },
+    {
+      "createdAt": "2024-03-03T11:58:47.590Z",
+      "description": "Split BAM file by lima",
+      "fileSize": 456479424,
+      "fileTypeId": "PacBio.DataSet.ConsensusReadSet",
+      "isChunked": false,
+      "modifiedAt": "2024-03-03T11:58:47.590Z",
+      "name": "Barcodes bc1048--bc1048",
+      "path": "m84100_240301_194028_s1.hifi_reads.bc1048.consensusreadset.xml",
+      "sourceId": "barcoding.tasks.lima-0",
+      "uniqueId": "7626fccc-b141-49f9-8d30-39302efe8d6a"
+    }
+  ],
+  "updatedAt": "2024-03-03T11:58:47.590Z",
+  "version": "0.2.2"
+}
