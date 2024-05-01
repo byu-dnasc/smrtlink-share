@@ -57,9 +57,6 @@ if gid != os.getgid():
     print(f"App must be run as group '{GROUP_NAME}'")
     exit(1)
 
-# set umask to 0 to give full permissions to group
-os.umask(0)
-
 # initialize and run the app
 from app.server import App
 
