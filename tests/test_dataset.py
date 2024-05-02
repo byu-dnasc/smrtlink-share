@@ -3,10 +3,9 @@ import app.dataset as dataset
 from app.dataset import Dataset, Parent, Child
 
 username = os.environ.get('USER')
-path = f'/home/{username}/smrtlink-container/data/L9j.pacb'
-TOMATO_PARENT = f'{path}/pb_formats/m84100_240301_194028_s1.hifi_reads.consensusreadset.xml'
-TOMATO_20 = f'{path}/pb_formats/m84100_240301_194028_s1.hifi_reads.bc1047.consensusreadset.xml'
-TOMATO_21 = f'{path}/pb_formats/m84100_240301_194028_s1.hifi_reads.bc1048.consensusreadset.xml'
+TOMATO_PARENT = 'tests/tomatoes/pb_formats/m84100_240301_194028_s1.hifi_reads.consensusreadset.xml'
+TOMATO_20 = 'tests/tomatoes/pb_formats/m84100_240301_194028_s1.hifi_reads.bc1047.consensusreadset.xml'
+TOMATO_21 = 'tests/tomatoes/pb_formats/m84100_240301_194028_s1.hifi_reads.bc1048.consensusreadset.xml'
 
 def test_pbcore_dataset():
     ds = dataset.DatasetXml(TOMATO_PARENT)
