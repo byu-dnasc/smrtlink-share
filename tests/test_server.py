@@ -9,7 +9,7 @@ import logging
 import threading
 
 from app.project import Project
-from app.server import App, new_project
+from app.server import App
 import app
 
 app_log = []
@@ -56,8 +56,3 @@ def test_RequestHandler():
     app.stop()
     app_thread.join()
     app_log.clear()
-
-def test_new_project():
-    project = Project()
-    from app.smrtlink import get_new_project
-    get_new_project = lambda x: project
