@@ -36,7 +36,7 @@ logger.setLevel(logging.INFO)
 log_formatter = logging.Formatter(
     '%(levelname)s: at %(asctime)s, %(funcName)s (%(filename)s) said "%(message)s"', datefmt='%H:%M:%S'
 )
-logger.addHandler(
-    (logging.FileHandler('smrtlink-share.log')
-            .setFormatter(log_formatter))
-)
+handler = logging.FileHandler('smrtlink-share.log')
+handler.setFormatter(log_formatter)
+handler.setLevel(logging.INFO)
+logger.addHandler(handler)
