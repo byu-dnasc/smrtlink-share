@@ -1,9 +1,7 @@
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from time import sleep
-import app.smrtlink as smrtlink
-import app.staging as staging
-import app.globus as globus
-from app import logger, OutOfSyncError
+from app import logger
+from app.handling import new_project, update_project, delete_project
 import re
 
 class InvalidRequestError(Exception):
@@ -16,40 +14,7 @@ def _get_project_id(uri):
         return int(match.group(1))
     else:
         return None
-
-def stage_new_project(project):
-    try:
-        staging.new(project)
-    except Exception as e:
-        ... # handle staging exception
-        ... # log the error
-
-def new_project():
-    try:
-        project = smrtlink.get_new_project()
-        if project is None:
-            raise Exception('SMRT Link has no projects (other than the "General Project").')
-    except Exception as e:
-        logger.error(f'Cannot handle new project request: {e}.')
-        return
-    stage_new_project(project)    
-
-def update_project(project_id):
-    try:
-        project = smrtlink.get_project(project_id)
-    except OutOfSyncError as e:
-        logger.info(f'App is Out-of-Sync with SMRT Link: {e.message}')
-        stage_new_project(e.project)
-        return
-    except Exception as e:
-        logger.error(f'Cannot handle project update request: {e}.')
-        return
-    try:
-        staging.update(project)
-    except Exception as e:
-        ... # handle staging exception
-        ... # log the error
-    
+   
 class RequestHandler(BaseHTTPRequestHandler):
     '''
     Respond to and log requests, then handle them asynchronously
@@ -123,7 +88,7 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         if not self.handle_response():
             return
-        sleep(1)
+        delete_project(self.project_id)
 
 class App(ThreadingHTTPServer):
 
