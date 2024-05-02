@@ -1,11 +1,18 @@
-from os import listdir, mkdir, makedirs, link, rename, stat, remove, walk, rmdir
+from os import listdir, mkdir, makedirs, link, rename, stat, remove, walk, rmdir, umask
 import peewee as pw
 import pwd
 from os.path import join, basename, dirname, exists
 import app.globus as globus
 from app import STAGING_ROOT, APP_USER
 
-PERMISSION=0o775
+'''
+Assumptions:
+once a project is created, it will not be deleted
+if a project is in the database, it 
+'''
+
+umask(0) # allow permissions to be specified explicitly
+DIR_PERMISSION=0o1775 # allow group to add and remove their own files, but not delete the directory
 
 class DatasetDirectory(pw.Model):
     dataset_id = pw.UUIDField()
@@ -17,7 +24,7 @@ def make_dir(dir):
     PERMISSION gives the owner and the group full permissions. 
     exist_ok=True will prevent an error from occuring if the directory already exists. 
     """
-    makedirs(dir, PERMISSION, exist_ok=True)
+    makedirs(dir, DIR_PERMISSION, exist_ok=True)
 
 def stage_dataset(dir, dataset):
     """
@@ -82,9 +89,9 @@ def rename_project(project):
     Gets called in the update function below. It simply replaces the 
     old project path with the new one. 
     """
-    project_path = get_project_path(project)
-    old_project_path = join(dirname(project_path), project.old_name)
-    rename(old_project_path, project_path)
+    new_project_path = get_project_path(project)
+    current_project_path = join(dirname(new_project_path), project.old_name)
+    rename(current_project_path, new_project_path)
 
 def add_datasets(project):
     project_path = get_project_path(project)
