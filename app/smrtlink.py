@@ -1,41 +1,38 @@
 from requests import HTTPError
 from app.project import Project
 from app.smrtlink_client import SmrtLinkClient
-from app import get_env_var, OutOfSyncError
+from app import OutOfSyncError, SMRTLINK_HOST, SMRTLINK_PORT, SMRTLINK_USER, SMRTLINK_PASS
 
 class DnascSmrtLinkClient(SmrtLinkClient):
 
     def get_project_dict(self, id):
         '''
         Returns a dictionary of project data, or None if not found.
-        Dictionary includes lists of project datasets and members.
         '''
         try:
             return self.get(f"/smrt-link/projects/{id}")
-        except HTTPError as e:
-            assert e.response.status_code == 404, 'Unexpected error when getting project from SMRT Link'
-            return None
+        except Exception as e:
+            if e.response.status_code == 404:
+                return None
+            raise Exception(f'Error getting data from SMRT Link: {e}')
     
     def get_project_ids(self):
-        '''Returns the ids of all projects in SMRT Link.'''
+        '''
+        Returns the ids of all projects in SMRT Link.
+        '''
         lst = self.get("/smrt-link/projects")
         return [dct['id'] for dct in lst]
    
-HOST = get_env_var('SMRTLINK_HOST')
-PORT = get_env_var('SMRTLINK_PORT')
-USER = get_env_var('SMRTLINK_USER')
-PASS = get_env_var('SMRTLINK_PASS')
-
 def _get_smrtlink_client():
     """
     Gets DnascSmrtLinkClient object
     """
     try:
         return DnascSmrtLinkClient(
-            host=HOST,
-            port=PORT,
-            username=USER,
-            password=PASS,
+            host=SMRTLINK_HOST,
+            port=SMRTLINK_PORT,
+            username=SMRTLINK_USER,
+            password=SMRTLINK_PASS,
             verify=False # Disable SSL verification (optional, default is True, i.e. SSL verification is enabled)
         )
     except Exception as e:
@@ -44,30 +41,27 @@ def _get_smrtlink_client():
 CLIENT = _get_smrtlink_client()
     
 def get_project(id):
-    '''Get a project from SMRT Link by id by calling get_project_dict method.'''
+    '''
+    Get a project from SMRT Link by id by calling get_project_dict method.
+    '''
     project_dict = CLIENT.get_project_dict(id)
     if project_dict:
-        return Project(**project_dict)
+        project = Project(**project_dict)
+        if project.is_new:
+            raise OutOfSyncError()
+        return project
     return None
 
 def get_new_project():
-    """Gets all of the projects and project IDs. Checks to see if there are more 
-    sl projects than db projects. If the difference is greater than one, it will 
-    raise an error. Otherwise it will return the newest project.
-    """
-    db_ids = Project.select(Project.id)
+    '''
+    Get the most recent project from SMRT Link.
+    Raises error there is a problem with the connection to SMRT Link.
+    '''
     sl_ids = CLIENT.get_project_ids()
-
-    offset = len(sl_ids) - len(db_ids)
-    if offset == 0:
-        return None
-    elif offset == 1:
-        return get_project(sl_ids[-1])
-    else: # abs(offset) > 1
-        raise OutOfSyncError()
-
-def sync_projects():
-    ...
+    project_d = CLIENT.get_project_dict(sl_ids[-1])
+    if project_d:
+        return Project(**project_d)
+    return None
 
 def load_db():
     '''Load the database with projects from SMRT Link.'''
