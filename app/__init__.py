@@ -23,13 +23,9 @@ except KeyError as e:
     raise ImportError(f"Variable {e} not found in .env file.")
 
 class OutOfSyncError(Exception):
-    def __init__(self, message, project) -> None:
-        super().__init__(message)
+    def __init__(self, project) -> None:
+        super().__init__('App is Out-of-Sync with SMRT Link.')
         self.project = project
-        self.message = message
-    
-    def __str__(self) -> str:
-        return f'{self.message}'
 
 logger = logging.getLogger('smrtlink-share')
 logger.setLevel(logging.INFO)
