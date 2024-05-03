@@ -5,13 +5,12 @@ from app import logger, OutOfSyncError
 def stage_new_project(project):
     '''
     Stage a new project. Return True if successful, False otherwise.
-    Log an error if staging fails.
+    Log an error if staging raises an exception.
     '''
     try:
         staging.new(project)
     except Exception as e:
-        ... # handle staging exception
-        ... # log the error
+        logger.error(f'Cannot stage project: {e}.')
         return False
     return True
 
