@@ -26,10 +26,14 @@ def new_project():
         project.save() # only update database if staging was successful
 
 def update_project(project_id):
+    '''Stage project by updating previously staged project files, unless
+    the turns out to be new to the app, in which case stage the project
+    using another method.
+    '''
     try:
         project = smrtlink.get_project(project_id)
     except OutOfSyncError as e:
-        logger.info(f'App is Out-of-Sync with SMRT Link: {e}')
+        logger.info('App is Out-of-Sync with SMRT Link.')
         project = e.project
     except Exception as e:
         logger.error(f'Cannot handle project update request: {e}.')
