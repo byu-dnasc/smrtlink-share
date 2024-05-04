@@ -24,7 +24,6 @@ except KeyError as e:
 
 class OutOfSyncError(Exception):
     def __init__(self, project) -> None:
-        super().__init__('App is Out-of-Sync with SMRT Link.')
         self.project = project
 
 logger = logging.getLogger('smrtlink-share')
