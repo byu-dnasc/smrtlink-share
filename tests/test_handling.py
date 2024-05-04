@@ -62,9 +62,10 @@ def test_new_project_staging_fails(mock_stage_new_project, mock_get_new_project)
     mock_stage_new_project.assert_called_once_with(mock_project)
     mock_project.save.assert_not_called()
 
+@patch('app.handling.logger')
 @patch('app.handling.smrtlink.get_project')
 @patch('app.handling.stage_new_project')
-def test_update_project_out_of_sync_success(mock_stage_new_project, mock_get_project):
+def test_update_project_new(mock_stage_new_project, mock_get_project, mock_logger):
     '''Case where app is out of sync with SMRT Link, but proceeds 
     to stage the project anyway.
     Result: Project files are staged and database is updated.
@@ -75,12 +76,13 @@ def test_update_project_out_of_sync_success(mock_stage_new_project, mock_get_pro
     mock_stage_new_project.return_value = True
     update_project(1)
     mock_get_project.assert_called_once()
+    mock_logger.info.assert_called_once()
     mock_stage_new_project.assert_called_once_with(mock_project)
     mock_project.save.assert_called()
 
 @patch('app.handling.smrtlink.get_project')
 @patch('app.handling.staging.update')
-def test_update_project_no_exception(mock_staging_update, mock_get_project):
+def test_update_project_update(mock_staging_update, mock_get_project):
     '''Case under normal conditions.
     Result: Project files are updated and the new data is saved 
     in the database.
