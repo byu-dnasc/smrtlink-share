@@ -2,7 +2,7 @@ import app.smrtlink as smrtlink
 import app.staging as staging
 from app import logger, OutOfSyncError
 
-def stage_new_project(project):
+def _stage_new_project(project):
     '''
     Stage a new project. Return True if successful, False otherwise.
     Log an error if staging raises an exception.
@@ -22,33 +22,37 @@ def new_project():
     except Exception as e:
         logger.error(f'Cannot handle new project request: {e}.')
         return
-    if stage_new_project(project):
+    if _stage_new_project(project):
         project.save() # only update database if staging was successful
+
+def _get_project(project_id):
+    '''Return project if found, else None and log error.'''
+    try:
+        return smrtlink.get_project(project_id)
+    except OutOfSyncError as e:
+        logger.info('App is Out-of-Sync with SMRT Link.')
+        return e.project
+    except Exception as e:
+        logger.error(f'Cannot handle project update request: {e}.')
+        return None
 
 def update_project(project_id):
     '''Stage project by updating previously staged project files, unless
     the turns out to be new to the app, in which case stage the project
     using another method.
-    '''
-    try:
-        project = smrtlink.get_project(project_id)
-    except OutOfSyncError as e:
-        logger.info('App is Out-of-Sync with SMRT Link.')
-        project = e.project
-    except Exception as e:
-        logger.error(f'Cannot handle project update request: {e}.')
+   '''
+    project = _get_project(project_id)
+    if project is None:
         return
-    if project.is_new:
-        if not stage_new_project(project):
-            return
+    elif project.is_new:
+        if _stage_new_project(project):
+            project.save()
     else:
         try:
             staging.update(project)
+            project.save()
         except Exception as e:
-            ... # handle staging exception
-            ... # log the error
-            return
-    project.save() # only update database if staging was successful
+            logger.error(f'Cannot stage project: {e}.')
 
 def delete_project(project_id):
     ... # delete project from database
