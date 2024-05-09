@@ -1,5 +1,5 @@
 from requests import HTTPError
-from app.project import Project
+from app.project import Project, NewProject
 from app.smrtlink_client import SmrtLinkClient
 from app import OutOfSyncError, SMRTLINK_HOST, SMRTLINK_PORT, SMRTLINK_USER, SMRTLINK_PASS
 
@@ -47,7 +47,7 @@ def get_project(id):
     project_dict = CLIENT.get_project_dict(id)
     if project_dict:
         project = Project(**project_dict)
-        if project.is_new:
+        if type(project) is NewProject:
             raise OutOfSyncError()
         return project
     return None

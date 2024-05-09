@@ -1,5 +1,6 @@
 import app.smrtlink as smrtlink
 import app.staging as staging
+from app.project import NewProject
 from app import logger, OutOfSyncError
 
 def _stage_new_project(project):
@@ -40,14 +41,14 @@ def update_project(project_id):
     '''Stage project by updating previously staged project files, unless
     the turns out to be new to the app, in which case stage the project
     using another method.
-   '''
+    '''
     project = _get_project(project_id)
     if project is None:
         return
-    elif project.is_new:
+    elif type(project) is NewProject:
         if _stage_new_project(project):
             project.save()
-    else:
+    else: # type(project) is UpdatedProject
         try:
             staging.update(project)
             project.save()
