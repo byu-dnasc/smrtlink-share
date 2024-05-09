@@ -5,8 +5,8 @@ import peewee as pw
 import dotenv
 dotenv.load_dotenv()
 
-from app.project import Project, ProjectDataset, ProjectMember
-from app.staging import DatasetDirectory
+from app.project import ProjectModel, ProjectDataset, ProjectMember
+import app
 
 # import modules that rely on environment variables
 import app.smrtlink as smrtlink
@@ -14,13 +14,14 @@ from app.globus import AccessRuleId
 
 @pytest.fixture(autouse=True)
 def init_db():
-    db = pw.SqliteDatabase(':memory:')
-    Project.bind(db)
-    ProjectDataset.bind(db)
-    ProjectMember.bind(db)
-    AccessRuleId.bind(db)
-    DatasetDirectory.bind(db)
-    db.create_tables([Project, ProjectDataset, ProjectMember, AccessRuleId, DatasetDirectory], safe=True)
+    app.db = pw.SqliteDatabase(':memory:')
+    ProjectModel.bind(app.db)
+    ProjectDataset.bind(app.db)
+    ProjectMember.bind(app.db)
+    app.db.create_tables([ProjectModel,
+                          ProjectDataset, 
+                          ProjectMember], 
+                          safe=True)
     yield
-    db.close()
+    app.db.close()
 
