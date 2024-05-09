@@ -1,5 +1,5 @@
 import peewee as pw
-from app import db
+from app import db, logger
 from app.dataset import Dataset, Parent, Child
 
 '''
@@ -140,7 +140,14 @@ class NewProject(Project):
         a child is only a child if its parent is in the project.
         '''
         super().__init__(project_d['id'], project_d['name'])
-        self._other_datasets = [Dataset(**ds_dct) for ds_dct in project_d['datasets']]
+        self._other_datasets = []
+        for ds_dct in project_d['datasets']:
+            try:
+                dataset = Dataset(**ds_dct)
+            except Exception as e:
+                logger.error(f'Cannot handle SMRT Link dataset {ds_dct['id']}: {e}.')
+                continue
+            self._other_datasets.append(dataset)
         self._child_datasets = []
         for ds in self._other_datasets:
             if type(ds) is Parent:
