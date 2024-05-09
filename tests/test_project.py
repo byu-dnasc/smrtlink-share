@@ -1,5 +1,5 @@
 import peewee
-from app.project import Project, ProjectDataset, ProjectMember
+from app.project import Project, ProjectDataset, ProjectMember, ProjectModel, NewProject, UpdatedProject
 import json
 import pytest
 import os
@@ -36,11 +36,11 @@ PROJECT = {
 
 def test_project():
     proj = Project(**PROJECT)
-    assert len(proj.datasets) == 3 # the parent dataset in PROJECT and its two child datasets
     proj.save()
-    assert proj.is_new
-    assert Project.select().count() == 1
-    assert ProjectDataset.select().count() == 3
+    assert type(proj) == NewProject
+    assert len(proj.datasets) == 3 # the parent dataset in PROJECT and its two child datasets
+    assert ProjectModel.select().count() == 1
+    assert ProjectDataset.select().count() == 1
     assert ProjectMember.select().count() == 1
     assert pytest.raises(peewee.IntegrityError, proj.save)
 
@@ -48,9 +48,10 @@ def test_update_project_no_changes():
     proj = Project(**PROJECT)
     proj.save()
     proj_again = Project(**PROJECT)
-    assert not proj_again.is_new
+    assert type(proj_again) == UpdatedProject
+    assert not hasattr(proj_again, 'old_name')
     assert not hasattr(proj_again, 'datasets_to_add')
-    assert not hasattr(proj_again, 'datasets_to_remove')
+    assert not hasattr(proj_again, 'dirs_to_remove')
     assert not hasattr(proj_again, 'members_to_add')
     assert not hasattr(proj_again, 'members_to_remove')
 
@@ -69,12 +70,12 @@ def test_update_project_add_dataset():
     PROJECT['datasets'].append(new_dataset)
     proj_updated = Project(**PROJECT)
     assert hasattr(proj_updated, 'datasets_to_add')
-    assert proj_updated.datasets_to_add == ['new uuid']
+    assert [ds.id for ds in proj_updated.datasets_to_add] == ['new uuid']
 
 def test_update_project_remove_dataset():
     proj = Project(**PROJECT)
     proj.save()
     PROJECT['datasets'].pop()
     proj_updated = Project(**PROJECT)
-    assert hasattr(proj_updated, 'datasets_to_remove')
-    assert len(proj_updated.datasets_to_remove) == 3
+    assert hasattr(proj_updated, 'dirs_to_remove')
+    assert len(proj_updated.dirs_to_remove) == 1
