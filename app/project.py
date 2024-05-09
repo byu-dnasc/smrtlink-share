@@ -1,56 +1,118 @@
 import peewee as pw
+from app import db
 from app.dataset import Dataset, Parent, Child
 
-class Project(pw.Model):
-    '''
-    Class to merely represent project data, not to modify it. 
-    Unless you are `DnascSmrtLinkClient.get_project()`, do not instantiate 
-    this class.
+'''
+SMRT Link uses parent datasets to represent a group of datasets.
+When you query SMRT Link for a project's data, if a parent dataset
+is in the project, then its children are not returned.
+'''
 
-    This class also defines a database schema for project data.
-    `DnascSmrtLinkClient` uses this database to identify project data
-    from SMRT Link which has been updated since the last time the app
-    checked.
+class ProjectModel(pw.Model):
 
-    Therefore, data found in this class only ever flows in one direction:
-    SMRT Link -> `Project` instance -> Database
-    '''
     id = pw.IntegerField(primary_key=True)
     name = pw.CharField()
 
-    @property
-    def id(self):
-        return str(self.id)
+    class Meta:
+        database = db
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        assert hasattr(self, 'datasets'), 'ProjectDataset foreign key backref not found'
+        assert hasattr(self, '_members'), 'ProjectMember foreign key backref not found'
+        self.member_ids = [str(record.member_id) for record in self._members]
+    
+class ProjectDataset(pw.Model):
+    class Meta:
+        database = db
+    project_id = pw.ForeignKeyField(ProjectModel, backref='datasets')
+    dataset_id = pw.UUIDField()
+    staging_dir = pw.CharField()
 
-    def _get_updates(self, db_project):
-        '''Identify changes between the instance and the database.'''
+class ProjectMember(pw.Model):
+    class Meta:
+        database = db
+    project_id = pw.ForeignKeyField(ProjectModel, backref='_members')
+    member_id = pw.CharField()
+
+class Project:
+    '''Use to instantiate NewProject and UpdatedProject'''
+    def __new__(cls, **project_d):
+        if 'datasets' in project_d and 'members' in project_d:
+            if not 'id' in project_d or not 'name' in project_d:
+                raise ValueError('Missing arguments to Project.__new__')
+            project_exists = (ProjectModel.select()
+                                    .where(ProjectModel.id == project_d['id'])
+                                    .exists())
+            if project_exists:
+                return super(Project, cls).__new__(UpdatedProject)
+            return super(Project, cls).__new__(NewProject)
+        else:
+            raise ValueError('Missing arguments to Project.__new__')
+    
+    def __init__(self, id, name):
+        self.id = str(id)
+        self.name = name
+        
+def get_member_ids(project_d):
+    '''Return a list of member ids from a dictionary of project data
+    from SMRT Link. Exclude the project owner from the list of members.
+    '''
+    return [member['login']
+            for member in project_d['members'] 
+            if member['role'] != 'OWNER']
+
+class UpdatedProject(Project):
+    '''
+    An UpdatedProject may optionally include each of the following attributes:
+    - `old_name`: the project's previous name.
+    - `datasets_to_add`: a list of Dataset instances for staging.
+    - `dirs_to_remove`: a list of relative paths to directories used to stage
+        datasets that are no longer part of the project and should be removed.
+    - `members_to_add`: a list of member ids to share the project with.
+    - `members_to_remove`: a list of member ids whose access to the project should
+        be revoked.
+    '''
+    def __init__(self, **project_d):
+        super().__init__(project_d['id'], project_d['name'])
+        # Identify changes between the instance and the database.
+        db_project = ProjectModel.get(ProjectModel.id == int(self.id))
         if self.name != db_project.name:
             self.old_name = db_project.name
-        current_ids = {uuid for uuid in self.datasets.keys()}
-        stale_ids = set(db_project._dataset_ids)
-        if current_ids - stale_ids:
-            self.datasets_to_add = list(current_ids - stale_ids)
-        if stale_ids - current_ids:
-            self.datasets_to_remove = list(stale_ids - current_ids)
-        current_members = set(self.members)
-        stale_members = set(db_project._members)
+        current_dataset_ids = {ds_dict['uuid'] for ds_dict in project_d['datasets']}
+        stale_dataset_ids = {dataset.dataset_id for dataset in db_project.datasets}
+        new_dataset_ids = list(current_dataset_ids - stale_dataset_ids)
+        if new_dataset_ids:
+            self.datasets_to_add = [Dataset(**ds_dict)
+                                    for ds_dict in project_d['datasets']
+                                    if ds_dict['uuid'] in new_dataset_ids]
+        self._datasets_to_remove = list(stale_dataset_ids - current_dataset_ids)
+        if self._datasets_to_remove:
+            self.dirs_to_remove = [dataset.staging_dir 
+                                   for dataset in db_project.datasets
+                                   if dataset.dataset_id in self._datasets_to_remove]
+        current_members = set(get_member_ids(project_d))
+        stale_members = set(db_project.member_ids)
         if current_members - stale_members:
             self.members_to_add = list(current_members - stale_members)
         if stale_members - current_members:
             self.members_to_remove = list(stale_members - current_members)
 
-    def _update_db(self):
-        '''Add or remove datasets and members from the database.'''
-        super().save() # update project name
+    def save(self):
+        if hasattr(self, 'old_name'):
+            (ProjectModel.update(name=self.name)
+                        .where(ProjectModel.id == self.id)
+                        .execute())
         if hasattr(self, 'datasets_to_add'):
-            for uuid in self.datasets_to_add:
+            for dataset in self.datasets_to_add:
                 (ProjectDataset.insert(project_id=self.id, 
-                                      dataset_id=uuid)
+                                      dataset_id=dataset.id,
+                                      staging_dir=dataset.dir_name())
                                .execute())
-        if hasattr(self, 'datasets_to_remove'):
+        if hasattr(self, '_datasets_to_remove'):
             (ProjectDataset.delete()
                             .where(ProjectDataset.project_id == self.id,
-                                   ProjectDataset.dataset_id.in_(self.datasets_to_remove))
+                                   ProjectDataset.dataset_id.in_(self._datasets_to_remove))
                             .execute())
         if hasattr(self, 'members_to_add'):
             for member in self.members_to_add:
@@ -60,94 +122,54 @@ class Project(pw.Model):
                            .where(ProjectMember.project_id == self.id,
                                   ProjectMember.member_id.in_(self.members_to_remove))
                            .execute())
-    
-    def _insert_db(self):
-        '''Insert a new project into the database.'''
-        super().save(force_insert=True)
+        
+class NewProject(Project):
+    '''
+    A NewProject includes the following attributes:
+    - `datasets`: a list of Dataset instances for staging
+    - `members`: a list of member ids to share the project with
+    '''
+    def __init__(self, **project_d):
+        '''
+        Initialize a NewProject instance using project data from SMRT Link.
+
+        Note that here, a child dataset is considered a dataset whose parent
+        is in the project. This implies that a project may have a dataset 
+        whose parent is not in the project, but that the dataset will not be 
+        represented by an instance of Dataset, not of Child. In other words,
+        a child is only a child if its parent is in the project.
+        '''
+        super().__init__(project_d['id'], project_d['name'])
+        self._other_datasets = [Dataset(**ds_dct) for ds_dct in project_d['datasets']]
+        self._child_datasets = []
+        for ds in self._other_datasets:
+            if type(ds) is Parent:
+                self._child_datasets.extend(ds.child_datasets)
+        self.datasets = self._other_datasets + self._child_datasets
+        self.members = get_member_ids(project_d)
+
+    def save(self):
+        '''
+        Insert a new project into the database.
+
+        Note that child datasets are not inserted into the database
+        (unless their parent is not in the project, in which case
+        the dataset is not considered to be a child and therefore
+        recieves no special treatment).
+        '''
+        (ProjectModel.insert(id=int(self.id), name=self.name)
+                    .execute())
+        # do not insert child datasets into the database
         dataset_rows = [{'project_id': self.id, 
-                         'dataset_id': ds.id} 
-                         for ds in self.datasets.values()]
+                         'dataset_id': ds.id,
+                         'staging_dir': ds.dir_name()}
+                         for ds in self._other_datasets]
         ProjectDataset.insert_many(dataset_rows).execute()
         member_rows = [{'project_id': self.id,
                         'member_id': member} 
                         for member in self.members]
         ProjectMember.insert_many(member_rows).execute()
-    
-    def save(self, *args):
-        if self.is_new:
-            self._insert_db()
-        else:
-            self._update_db()
 
-    def __init__(self, *args, **kwargs):
-        '''
-        There are two types of `Project` instances, internal and external,
-        whose initialization is handled respectively by one or the other
-        of the two branches of this method.
-        Both types of instances have a variable for each of the `peewee` 
-        'fields'. These are initialized by `super().__init__()`. Both types of 
-        instances also have a list of dataset ids, initialized by this method.
-        The 'internal' type of instance has only the variables mentioned above
-        and should only be used within `Project.__init__`.
-        The 'external' type of instance has one more optional variable called
-        `updates`, which is a list of field names that have changed since the 
-        last time the app checked SMRT Link for updates. If the project is new
-        (i.e., it does not exist in the database), then `updates` is omitted.
-
-        Another key difference between the two types of instances is that the
-        internal instance is populated with data from the database, while the
-        external instance is populated with data from SMRT Link. 
-        
-        The instantiation of an external instance immediately saves a project
-        to the database.
-        '''
-        if 'datasets' in kwargs and 'members' in kwargs: # external instance
-            # initialize instance data
-            assert 'id' in kwargs and 'name' in kwargs, 'Missing project data'
-            super().__init__(*args, **kwargs)
-            self.datasets = {ds_dct['uuid']: Dataset(**ds_dct) for ds_dct in kwargs['datasets']}
-            # add child datasets to self.datasets
-            child_datasets = {}
-            for ds in self.datasets.values():
-                if type(ds) is Parent:
-                    child_datasets.update({child.id: child for child in ds.child_datasets})
-            self.datasets.update(child_datasets)
-            self.members = [member['login'] 
-                            for member in kwargs['members'] 
-                            if member['role'] != 'OWNER']
-            # compare instance data with database data
-            db_project = Project.get_or_none(Project.id == self.id)
-            if db_project: # get updates using database
-                self._get_updates(db_project)
-                self.is_new = False
-            else: # load instance data into database
-                self.is_new = True
-        elif 'id' in kwargs and 'name' in kwargs: # internal instance, a.k.a. database instance
-            super().__init__(*args, **kwargs) # populate instance with database data in kwargs
-            assert hasattr(self, '_dataset_id_refs'), 'ProjectDataset foreign key backref not found'
-            assert hasattr(self, '_member_id_refs'), 'ProjectMember foreign key backref not found'
-            self._dataset_ids = [str(ref.dataset_id) for ref in self._dataset_id_refs]
-            self._members = [str(ref.member_id) for ref in self._member_id_refs]
-        else:
-            raise ValueError('Missing arguments to Project.__init__')
-    
-    def __str__(self):
-        return str(self.name)
-    
     def __iter__(self):
         '''Iterate over datasets in the project.'''
-        return iter(self.datasets.values())
-    
-    def __getitem__(self, key):
-        '''Get a dataset by its uuid.'''
-        return self.datasets[key]
-
-class ProjectDataset(pw.Model):
-    '''Do not instantiate outside of `Project`.'''
-    project_id = pw.ForeignKeyField(Project, backref='_dataset_id_refs')
-    dataset_id = pw.UUIDField()
-
-class ProjectMember(pw.Model):
-    '''Do not instantiate outside of `Project`.'''
-    project_id = pw.ForeignKeyField(Project, backref='_member_id_refs')
-    member_id = pw.CharField()
+        return iter(self.datasets)
