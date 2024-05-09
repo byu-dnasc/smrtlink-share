@@ -2,6 +2,7 @@ from unittest.mock import patch, MagicMock
 from app import OutOfSyncError
 from app.handling import new_project, _stage_new_project, update_project, _get_project
 from unittest.mock import patch
+from app.project import ProjectModel, NewProject, UpdatedProject
 
 @patch('app.handling.staging.new')
 @patch('app.handling.logger')
@@ -62,54 +63,6 @@ def test_new_project_staging_fails(mock_stage_new_project, mock_get_new_project)
     mock_stage_new_project.assert_called_once_with(mock_project)
     mock_project.save.assert_not_called()
 
-@patch('app.handling._get_project')
-@patch('app.handling._stage_new_project')
-def test_update_project_new(mock_stage_new_project, mock_get_project):
-    '''Case where app is out of sync with SMRT Link, so the staging.new function is
-    used.
-    Result: Project files and database are updated, plus a message is logged as "info"
-    '''
-    mock_project = MagicMock()
-    mock_project.is_new = True
-    mock_get_project.return_value = mock_project
-    mock_stage_new_project.return_value = True
-    update_project(1)
-    mock_get_project.assert_called_once()
-    mock_stage_new_project.assert_called_once_with(mock_project)
-    mock_project.save.assert_called()
-
-@patch('app.handling.smrtlink.get_project')
-@patch('app.handling.staging.update')
-def test_update_project_update(mock_staging_update, mock_get_project):
-    '''Case under normal conditions.
-    Result: Project files and database are updated.
-    '''
-    mock_project = MagicMock()
-    mock_project.is_new = False
-    mock_get_project.return_value = mock_project
-    mock_staging_update.return_value = True
-    update_project(1)
-    mock_get_project.assert_called_once()
-    mock_staging_update.assert_called_once_with(mock_project)
-    mock_project.save.assert_called_once()
-
-@patch('app.handling.logger')
-@patch('app.handling.smrtlink.get_project')
-@patch('app.handling.staging.update')
-def test_update_project_update_staging_error(mock_staging_update, mock_get_project, mock_logger):
-    '''Case where staging.update raises an exception.
-    Result: No modifications to project files or database, error is logged.
-    '''
-    mock_project = MagicMock()
-    mock_project.is_new = False
-    mock_get_project.return_value = mock_project
-    mock_staging_update.side_effect = Exception()
-    update_project(1)
-    mock_get_project.assert_called_once()
-    mock_staging_update.assert_called_once_with(mock_project)
-    mock_project.save.assert_not_called()
-    mock_logger.error.assert_called_once()
-
 @patch('app.handling.logger')
 @patch('app.handling.smrtlink.get_project')
 def test_get_project_smrtlink_error(mock_smrtlink_get_project, mock_logger):
@@ -140,3 +93,52 @@ def test_get_project(mock_smrtlink_get_project):
     mock_project = MagicMock()
     mock_smrtlink_get_project.return_value = mock_project
     assert _get_project(1) is mock_project
+
+@patch('app.handling._get_project')
+@patch('app.handling._stage_new_project')
+def test_update_project_new(mock_stage_new_project, mock_get_project):
+    '''Case where app is out of sync with SMRT Link, so the staging.new function is
+    used.
+    Result: Project files and database are updated, plus a message is logged as "info"
+    '''
+    project = NewProject(**{'id': 1, 'name': 'test', 'datasets': [], 'members': []})
+    mock_get_project.return_value = project
+    mock_stage_new_project.return_value = True
+    update_project(1)
+    mock_get_project.assert_called_once()
+    mock_stage_new_project.assert_called_once_with(project)
+    assert ProjectModel.select().count() == 1 # i.e. project.save() was called
+
+@patch('app.handling.smrtlink.get_project')
+@patch('app.handling.staging.update')
+def test_update_project_update(mock_staging_update, mock_get_project):
+    '''Case under normal conditions.
+    Result: Project files and database are updated.
+    '''
+    NewProject(**{'id': 1, 'name': 'test', 'datasets': [], 'members': []}).save() # prepare the database
+    project = UpdatedProject(**{'id': 1, 'name': 'updated', 'datasets': [], 'members': []})
+    mock_get_project.return_value = project
+    mock_staging_update.return_value = True
+    update_project(1)
+    mock_get_project.assert_called_once()
+    mock_staging_update.assert_called_once_with(project)
+    updated_name = ProjectModel.get(ProjectModel.id == project.id).name
+    assert updated_name == 'updated' # i.e. project.save() was called
+
+@patch('app.handling.logger')
+@patch('app.handling.smrtlink.get_project')
+@patch('app.handling.staging.update')
+def test_update_project_update_staging_error(mock_staging_update, mock_get_project, mock_logger):
+    '''Case where staging.update raises an exception.
+    Result: No modifications to project files or database, error is logged.
+    '''
+    NewProject(**{'id': 1, 'name': 'test', 'datasets': [], 'members': []}).save() # prepare the database
+    project = UpdatedProject(**{'id': 1, 'name': 'updated', 'datasets': [], 'members': []})
+    mock_get_project.return_value = project
+    mock_staging_update.side_effect = Exception()
+    update_project(1)
+    mock_get_project.assert_called_once()
+    mock_staging_update.assert_called_once_with(project)
+    project_name = ProjectModel.get(ProjectModel.id == project.id).name
+    assert project_name == 'test' # i.e. project.save() was not called
+    mock_logger.error.assert_called_once()
