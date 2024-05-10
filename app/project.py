@@ -53,6 +53,7 @@ class Project:
     def __init__(self, id, name):
         self.id = str(id)
         self.name = name
+        self.dir_name = f'Project {self.id}: {self.name}'
         
 def get_member_ids(project_d):
     '''Return a list of member ids from a dictionary of project data
