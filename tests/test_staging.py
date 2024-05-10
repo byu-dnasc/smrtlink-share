@@ -18,7 +18,7 @@ def cleanup():
 
 def test_make_dir():
     path = STAGING_ROOT + "/test_dir"
-    staging.make_dir(path)
+    staging._make_dir(path)
     result = stat(path)
     assert result.st_mode == 0o41775
 
@@ -36,7 +36,7 @@ def test_delete_dir():
     os.mkdir(path)
     with open(f"{path}/test_file", "w") as f:
         pass
-    staging.delete_dir(path)
+    staging._delete_dir(path)
     assert not exists(f"{path}/test_file")
 
 class TestDataSet:
