@@ -48,7 +48,7 @@ def get_project(id):
     if project_dict:
         project = Project(**project_dict)
         if type(project) is NewProject:
-            raise OutOfSyncError()
+            raise OutOfSyncError(project)
         return project
     return None
 

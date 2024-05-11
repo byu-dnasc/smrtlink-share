@@ -146,7 +146,7 @@ class NewProject(Project):
             try:
                 dataset = Dataset(**ds_dct)
             except Exception as e:
-                logger.error(f'Cannot handle SMRT Link dataset {ds_dct['id']}: {e}.')
+                logger.error(f"Cannot handle SMRT Link dataset {ds_dct['id']}: {e}.")
                 continue
             self._other_datasets.append(dataset)
         self._child_datasets = []
