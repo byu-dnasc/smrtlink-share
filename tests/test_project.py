@@ -1,4 +1,5 @@
 import peewee
+from unittest.mock import patch, MagicMock
 from app.project import Project, ProjectDataset, ProjectMember, ProjectModel, NewProject, UpdatedProject
 import json
 import pytest
@@ -16,6 +17,7 @@ PROJECT = {
     "name": "Tomato Project",
     "datasets": [
       {
+        "id": 1,
         "name": "Germany tomato 20 and 21-Cell1 (all samples)",
         "numChildren": 2,
         "uuid": "48a71a3e-c97c-43ea-ba41-8c2b31dd32b2",
@@ -79,3 +81,10 @@ def test_update_project_remove_dataset():
     proj_updated = Project(**PROJECT)
     assert hasattr(proj_updated, 'dirs_to_remove')
     assert len(proj_updated.dirs_to_remove) == 1
+
+@patch('app.project.logger')
+def test_invalid_dataset_xml(mock_logger):
+    PROJECT['datasets'][0]['path'] = 'invalid path'
+    proj = Project(**PROJECT)
+    proj.save()
+    mock_logger.error.assert_called_once()

@@ -63,6 +63,14 @@ def get_member_ids(project_d):
             for member in project_d['members'] 
             if member['role'] != 'OWNER']
 
+def create_dataset(ds_dct):
+    '''Create a Dataset instance from a dictionary.'''
+    try:
+        return Dataset(**ds_dct)
+    except Exception as e:
+        logger.error(f"Cannot handle SMRT Link dataset {ds_dct['id']}: {e}.")
+        return None
+
 class UpdatedProject(Project):
     '''
     An UpdatedProject may optionally include each of the following attributes:
@@ -84,9 +92,12 @@ class UpdatedProject(Project):
         stale_dataset_ids = {dataset.dataset_id for dataset in db_project.datasets}
         new_dataset_ids = list(current_dataset_ids - stale_dataset_ids)
         if new_dataset_ids:
-            self.datasets_to_add = [Dataset(**ds_dict)
-                                    for ds_dict in project_d['datasets']
-                                    if ds_dict['uuid'] in new_dataset_ids]
+            self.datasets_to_add = []
+            for ds_dict in project_d['datasets']:
+                if ds_dict['uuid'] in new_dataset_ids:
+                    dataset = create_dataset(ds_dict)
+                    if dataset:
+                        self.datasets_to_add.append(dataset)
         self._datasets_to_remove = list(stale_dataset_ids - current_dataset_ids)
         if self._datasets_to_remove:
             self.dirs_to_remove = [dataset.staging_dir 
@@ -108,7 +119,7 @@ class UpdatedProject(Project):
             for dataset in self.datasets_to_add:
                 (ProjectDataset.insert(project_id=self.id, 
                                       dataset_id=dataset.id,
-                                      staging_dir=dataset.dir_name())
+                                      staging_dir=dataset.dir_path)
                                .execute())
         if hasattr(self, '_datasets_to_remove'):
             (ProjectDataset.delete()
@@ -133,22 +144,13 @@ class NewProject(Project):
     def __init__(self, **project_d):
         '''
         Initialize a NewProject instance using project data from SMRT Link.
-
-        Note that here, a child dataset is considered a dataset whose parent
-        is in the project. This implies that a project may have a dataset 
-        whose parent is not in the project, but that the dataset will not be 
-        represented by an instance of Dataset, not of Child. In other words,
-        a child is only a child if its parent is in the project.
         '''
         super().__init__(project_d['id'], project_d['name'])
         self._other_datasets = []
         for ds_dct in project_d['datasets']:
-            try:
-                dataset = Dataset(**ds_dct)
-            except Exception as e:
-                logger.error(f"Cannot handle SMRT Link dataset {ds_dct['id']}: {e}.")
-                continue
-            self._other_datasets.append(dataset)
+            dataset = create_dataset(ds_dct)
+            if dataset:
+                self._other_datasets.append(dataset)
         self._child_datasets = []
         for ds in self._other_datasets:
             if type(ds) is Parent:
@@ -170,7 +172,7 @@ class NewProject(Project):
         # do not insert child datasets into the database
         dataset_rows = [{'project_id': self.id, 
                          'dataset_id': ds.id,
-                         'staging_dir': ds.dir_name()}
+                         'staging_dir': ds.dir_path}
                          for ds in self._other_datasets]
         ProjectDataset.insert_many(dataset_rows).execute()
         member_rows = [{'project_id': self.id,
