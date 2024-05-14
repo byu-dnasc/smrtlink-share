@@ -15,7 +15,21 @@ def test_pbcore_dataset():
         sample_datasets.append(dataset.DataSet(xml))
     assert True
 
+def test_dataset():
+    '''Test the case of a dataset with no children'''
+    ds = Dataset(**{
+        'name': 'dataset1',
+        'uuid': '1',
+        'path': TOMATO_21,
+        'numChildren': 0,
+    })
+    assert type(ds) is Dataset
+    assert ds.name == 'Tomato 21'
+    assert ds.movie_id == 'm84100_240301_194028_s1'
+    assert len(ds.files) == 2
+
 def test_tomato_parent():
+    '''Test the case of a parent dataset'''
     ds = Dataset(**{
         'name': 'dataset1',
         'uuid': '1',
@@ -23,23 +37,28 @@ def test_tomato_parent():
         'numChildren': 2,
     })
     assert type(ds) is Parent
-    assert {c_ds.xml_path for c_ds in ds.child_datasets} == {TOMATO_20, TOMATO_21}
-    assert {c_ds.barcode for c_ds in ds.child_datasets} == {'bc1047--bc1047', 'bc1048--bc1048'}
-    assert {c_ds.name for c_ds in ds.child_datasets} == {'Tomato 20', 'Tomato 21'}
-    assert all(c_ds.parent is ds for c_ds in ds.child_datasets)
-    assert ds.movie_id == 'm84100_240301_194028_s1'
-    assert all(c_ds.movie_id == 'm84100_240301_194028_s1' for c_ds in ds.child_datasets)
-    assert len(ds.files) == 19
+    assert ds.name == 'Germany tomato 20 and 21'
+    assert len(ds.child_datasets) == 3 # two children, plus supplemental resources
 
 def test_tomato_20():
-    ds = Dataset(**{
+    '''Test the case of a child dataset'''
+    ds = Child('parent_dir', **{
         'name': 'dataset1',
         'uuid': '1',
         'path': TOMATO_20,
         'numChildren': 0,
     })
-    assert type(ds) is Child
     assert ds.barcode == 'bc1047--bc1047'
     assert ds.name == 'Tomato 20'
-    assert ds.movie_id == 'm84100_240301_194028_s1'
     assert len(ds.files) == 2
+
+def test_supplemental_resources():
+    ds = dataset.SupplementalResources('parent', ['file1', 'file2'])
+    assert ds.dir_path == 'parent/Supplemental Run Data'
+    assert ds.files == ['file1', 'file2']
+
+def test_analysis():
+    ds = dataset.Analysis('parent', 'name', 1, ['file'])
+    assert ds.prefix    
+    assert ds.dir_name
+    assert ds.files

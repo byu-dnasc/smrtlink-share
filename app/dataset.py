@@ -1,5 +1,8 @@
+import abc
+from os.path import join
 from pbcore.io.dataset.DataSetIO import DataSet as DatasetXml
 from pbcore.io.dataset.DataSetMembers import ExternalResource, ExternalResources
+from app import logger
 
 def _get_file_path(res, file_paths):
     '''
@@ -60,40 +63,31 @@ def _get_child_dataset_dicts(parent_xml):
         }
 
 def get_movie_id(xml: DatasetXml) -> str | None:
-    try:
-        return (xml.metadata['Collections']
-                            ['CollectionMetadata']
-                            .record['attrib']
-                            ['Context'])
-    except Exception as e:
-        # TODO: log error: xml file does not contain movie id
-        return None
+    return (xml.metadata['Collections']
+                        ['CollectionMetadata']
+                        .record['attrib']
+                        ['Context'])
 
 def get_sample_name(xml: DatasetXml) -> str | None:
+    '''Get the sample name from a dataset XML file
     '''
-    Get the sample name from a dataset XML file
-    representing a single sample (i.e. len(BioSamples) == 1)
-    '''
-    try:
-        return (xml.metadata['Collections']
-                            ['CollectionMetadata']
-                            ['WellSample']
-                            ['BioSamples'][0]
-                            .record['attrib']
-                            ['Name']
-                            )
-    except Exception as e:
-        return None
+    return (xml.metadata['Collections']
+                        ['CollectionMetadata']
+                        ['WellSample']
+                        ['BioSamples'][0]
+                        .record['attrib']
+                        ['Name']
+                        )
 
 def get_well_sample_name(xml: DatasetXml) -> str | None:
-    try:
-        return (xml.metadata['Collections']
-                            ['CollectionMetadata']
-                            ['WellSample']
-                            .record['attrib']
-                            ['Name'])
-    except Exception as e:
-        return None
+    '''This is the name given to represent all DNA that was loaded
+    in a cell. This name should only be used for parent datasets.
+    '''
+    return (xml.metadata['Collections']
+                        ['CollectionMetadata']
+                        ['WellSample']
+                        .record['attrib']
+                        ['Name'])
 
 def get_barcode(xml: DatasetXml) -> str | None:
     try:
@@ -107,27 +101,85 @@ def get_barcode(xml: DatasetXml) -> str | None:
     except Exception as e:
         return None
 
-class Dataset:
+class FileCollection(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def files(self) -> list[str]:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def dir_name(self) -> str:
+        '''Return the name of the directory where this dataset should be staged.'''
+        pass
+
+    @property
+    @abc.abstractmethod
+    def prefix(self) -> str:
+        '''
+        Return the path prefix of the directory where this dataset should be staged.
+
+        The default implementation returns an empty string, which is appropriate
+        for when the FileCollection's directory should be located directly within
+        the project directory.
+        '''
+        return ''
+
+    @property
+    def dir_path(self) -> str: # this method is meant to be inherited by all subclasses
+        '''Return the path to the directory where this dataset should be staged.'''
+        return join(self.prefix, self.dir_name)
+
+class Analysis(FileCollection):
+    def __init__(self, parent_dir, name, id, files):
+        '''
+        `parent_dir`: the directory in which the new directory for these analysis 
+        files should be created.
+        '''
+        self.parent_dir = parent_dir
+        self.name = name
+        self._files = files
+        self.id = id
+    
+    @property
+    def prefix(self):
+        return self.parent_dir
+   
+    @property
+    def dir_name(self):
+        return f'Analysis {self.id}: {self.name}'
+    
+    @property
+    def files(self):
+        return self._files
+
+class Dataset(FileCollection):
+
     def __new__(cls, *args, **kwargs):
+        '''Instantiate a Dataset or Parent, depending on the number of children.
+        '''
         if 'numChildren' in kwargs and kwargs['numChildren'] > 0:
             return super(Dataset, cls).__new__(Parent)
-        else:
-            return super(Dataset, cls).__new__(Child)
+        else: 
+            return super(Dataset, cls).__new__(cls)
+
     def __init__(self, **kwargs):
         self.id = kwargs['uuid']
-        self.name = kwargs['name']
-        self.xml_path = kwargs['path']
-        self.xml = DatasetXml(self.xml_path)
+        self.xml = DatasetXml(kwargs['path'])
+        self.name = get_sample_name(self.xml)
         self.movie_id = get_movie_id(self.xml)
-        self.files = []
-        if self.xml.supplementalResources:
-            self.files = _resources_to_file_paths(self.xml.supplementalResources)
+    
+    @property
+    def prefix(self):
+        return super().prefix # empty string
 
+    @property
     def dir_name(self):
-        '''
-        Return the name of the directory where this dataset should be staged.
-        '''
         return f'Movie {self.movie_id} - {self.name}'
+    
+    @property
+    def files(self):
+        return _resources_to_file_paths(self.xml.externalResources)
 
     def __str__(self):
         return str(self.name)
@@ -140,32 +192,66 @@ class Parent(Dataset):
     '''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.name = get_well_sample_name(self.xml)
+        self.num_children = kwargs['numChildren']
         child_dataset_dicts = _get_child_dataset_dicts(self.xml)
-        self.child_datasets = [Child(self, **child_dict) for child_dict in child_dataset_dicts]
+        self.child_datasets = []
+        for child_dict in child_dataset_dicts:
+            try:
+                dataset = Child(self.dir_name, **child_dict) 
+            except Exception as e:
+                logger.error(f"Cannot handle SMRT Link dataset {child_dict['id']}: {e}.")
+                continue
+            self.child_datasets.append(dataset)
+        self.child_datasets.append(SupplementalResources(self.dir_name, self.files))
+
+    @property
+    def prefix(self):
+        return super().prefix
     
-    def outer_dir_name(self):
-        return super().dir_name()
-    
+    @property
     def dir_name(self):
-        parent_dir = self.outer_dir_name()
-        return f'{parent_dir}/Supplemental Run Data'
+        return f'{super().dir_name} ({self.num_children} barcoded samples)'
+    
+    @property
+    def files(self):
+        return [] # Parent datasets have no files of their own
     
 class Child(Dataset):
-    def __init__(self, parent=None, **kwargs):
+    '''
+    A child dataset is considered a dataset whose parent is in the project. 
+    This implies that a project may have a dataset whose parent is not in the 
+    project, but that the dataset will be represented by an instance of Dataset, 
+    not of Child. In other words, a child is only a child if its parent is in the 
+    project.
+    '''
+    def __init__(self, parent_dir, **kwargs):
         super().__init__(**kwargs)
         self.barcode = get_barcode(self.xml)
         self.name = get_sample_name(self.xml) # replace DataSet name with BioSample name
-        self.parent = parent
-        self.files.extend(_resources_to_file_paths(self.xml.externalResources))
+        self.parent_dir = parent_dir
     
+    @property
+    def prefix(self):
+        return self.parent_dir
+
+    @property
     def dir_name(self):
-        '''
-        Override the parent method to return the dataset's directory
-        name prefixed with the parent dataset's directory name. 
-        The result is a relative path to the dataset's directory
-        (relative to the project directory).
-        '''
-        parent_path = f'Movie {self.movie_id}'
-        if self.parent:
-            parent_path = self.parent.outer_dir_name()
-        return f'{parent_path}/{self.name} ({self.barcode})'
+        return f'{self.name} ({self.barcode})'
+
+class SupplementalResources(FileCollection):
+    def __init__(self, parent_dir, files):
+        self.parent_dir = parent_dir
+        self._files = files
+    
+    @property
+    def prefix(self):
+        return self.parent_dir
+    
+    @property
+    def dir_name(self):
+        return 'Supplemental Run Data'
+
+    @property
+    def files(self):
+        return self._files
