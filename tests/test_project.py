@@ -40,7 +40,7 @@ def test_project():
     proj = Project(**PROJECT)
     proj.save()
     assert type(proj) == NewProject
-    assert len(proj.datasets) == 3 # the parent dataset in PROJECT and its two child datasets
+    assert len(proj.datasets) == 4 # the parent dataset, the supplemental resources, and the two child datasets
     assert ProjectModel.select().count() == 1
     assert ProjectDataset.select().count() == 1
     assert ProjectMember.select().count() == 1
