@@ -26,7 +26,7 @@ class ProjectDataset(pw.Model):
     class Meta:
         database = db
     project_id = pw.ForeignKeyField(ProjectModel, backref='datasets')
-    dataset_id = pw.UUIDField()
+    dataset_id = pw.CharField(max_length=50)
     staging_dir = pw.CharField()
 
 class ProjectMember(pw.Model):
