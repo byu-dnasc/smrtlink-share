@@ -52,7 +52,7 @@ def test_update_project_no_changes():
     proj_again = Project(**PROJECT)
     assert type(proj_again) == UpdatedProject
     assert not hasattr(proj_again, 'old_name')
-    assert not hasattr(proj_again, 'datasets_to_add')
+    assert not hasattr(proj_again, 'datasets')
     assert not hasattr(proj_again, 'dirs_to_remove')
     assert not hasattr(proj_again, 'members_to_add')
     assert not hasattr(proj_again, 'members_to_remove')
@@ -71,8 +71,8 @@ def test_update_project_add_dataset():
     new_dataset['uuid'] = 'new uuid'
     PROJECT['datasets'].append(new_dataset)
     proj_updated = Project(**PROJECT)
-    assert hasattr(proj_updated, 'datasets_to_add')
-    assert [ds.id for ds in proj_updated.datasets_to_add] == ['new uuid']
+    assert hasattr(proj_updated, 'datasets')
+    assert [ds.id for ds in proj_updated.datasets] == ['new uuid']
 
 def test_update_project_remove_dataset():
     proj = Project(**PROJECT)

@@ -75,7 +75,7 @@ class UpdatedProject(Project):
     '''
     An UpdatedProject may optionally include each of the following attributes:
     - `old_name`: the project's previous name.
-    - `datasets_to_add`: a list of Dataset instances for staging.
+    - `datasets`: a list of Dataset instances for staging.
     - `dirs_to_remove`: a list of relative paths to directories used to stage
         datasets that are no longer part of the project and should be removed.
     - `members_to_add`: a list of member ids to share the project with.
@@ -92,12 +92,12 @@ class UpdatedProject(Project):
         stale_dataset_ids = {dataset.dataset_id for dataset in db_project.datasets}
         new_dataset_ids = list(current_dataset_ids - stale_dataset_ids)
         if new_dataset_ids:
-            self.datasets_to_add = []
+            self.datasets = []
             for ds_dict in project_d['datasets']:
                 if ds_dict['uuid'] in new_dataset_ids:
                     dataset = create_dataset(ds_dict)
                     if dataset:
-                        self.datasets_to_add.append(dataset)
+                        self.datasets.append(dataset)
         self._datasets_to_remove = list(stale_dataset_ids - current_dataset_ids)
         if self._datasets_to_remove:
             self.dirs_to_remove = [dataset.staging_dir 
@@ -115,8 +115,8 @@ class UpdatedProject(Project):
             (ProjectModel.update(name=self.name)
                         .where(ProjectModel.id == self.id)
                         .execute())
-        if hasattr(self, 'datasets_to_add'):
-            for dataset in self.datasets_to_add:
+        if hasattr(self, 'datasets'):
+            for dataset in self.datasets:
                 (ProjectDataset.insert(project_id=self.id, 
                                       dataset_id=dataset.id,
                                       staging_dir=dataset.dir_path)
