@@ -1,6 +1,6 @@
 import os
-import app.dataset as dataset
-from app.dataset import Dataset, Parent, Child
+import app.collection as collection
+from app.collection import Dataset, Parent, Child
 
 username = os.environ.get('USER')
 TOMATO_PARENT = 'tests/tomatoes/pb_formats/m84100_240301_194028_s1.hifi_reads.consensusreadset.xml'
@@ -8,11 +8,11 @@ TOMATO_20 = 'tests/tomatoes/pb_formats/m84100_240301_194028_s1.hifi_reads.bc1047
 TOMATO_21 = 'tests/tomatoes/pb_formats/m84100_240301_194028_s1.hifi_reads.bc1048.consensusreadset.xml'
 
 def test_pbcore_dataset():
-    ds = dataset.DatasetXml(TOMATO_PARENT)
+    ds = collection.DatasetXml(TOMATO_PARENT)
     sample_datasets = []
     for xml in [res.resourceId for res in ds.externalResources if res.resourceId.endswith('.xml')]: # FIXME: implement function to get XMLs from external resources
         assert os.path.exists(xml)
-        sample_datasets.append(dataset.DataSet(xml))
+        sample_datasets.append(collection.DataSet(xml))
     assert True
 
 def test_dataset():
@@ -53,12 +53,12 @@ def test_tomato_20():
     assert len(ds.files) == 2
 
 def test_supplemental_resources():
-    ds = dataset.SupplementalResources('parent', ['file1', 'file2'])
+    ds = collection.SupplementalResources('parent', ['file1', 'file2'])
     assert ds.dir_path == 'parent/Supplemental Run Data'
     assert ds.files == ['file1', 'file2']
 
 def test_analysis():
-    ds = dataset.Analysis('parent', 'name', 1, ['file'])
+    ds = collection.AnalysisModel('parent', 'name', 1, ['file'])
     assert ds.prefix    
     assert ds.dir_name
     assert ds.files

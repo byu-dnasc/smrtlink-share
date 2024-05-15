@@ -1,39 +1,12 @@
-import peewee as pw
-from app import db, logger
-from app.dataset import Dataset, Parent, Child
+from app import logger
+from app.collection import Dataset, Parent, Child
+from app.state import ProjectModel, ProjectDataset, ProjectMember
 
 '''
 SMRT Link uses parent datasets to represent a group of datasets.
 When you query SMRT Link for a project's data, if a parent dataset
 is in the project, then its children are not returned.
 '''
-
-class ProjectModel(pw.Model):
-
-    id = pw.IntegerField(primary_key=True)
-    name = pw.CharField()
-
-    class Meta:
-        database = db
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        assert hasattr(self, 'datasets'), 'ProjectDataset foreign key backref not found'
-        assert hasattr(self, '_members'), 'ProjectMember foreign key backref not found'
-        self.member_ids = [str(record.member_id) for record in self._members]
-    
-class ProjectDataset(pw.Model):
-    class Meta:
-        database = db
-    project_id = pw.ForeignKeyField(ProjectModel, backref='datasets')
-    dataset_id = pw.CharField(max_length=50)
-    staging_dir = pw.CharField()
-
-class ProjectMember(pw.Model):
-    class Meta:
-        database = db
-    project_id = pw.ForeignKeyField(ProjectModel, backref='_members')
-    member_id = pw.CharField()
 
 class Project:
     '''Use to instantiate NewProject and UpdatedProject'''
