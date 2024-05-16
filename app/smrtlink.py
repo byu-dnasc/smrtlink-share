@@ -1,5 +1,5 @@
 from requests import HTTPError
-from app.project import Project, NewProject
+from app.project import Project, NewProject, UpdatedProject
 from app.smrtlink_client import SmrtLinkClient
 from app import OutOfSyncError, SMRTLINK_HOST, SMRTLINK_PORT, SMRTLINK_USER, SMRTLINK_PASS
 
@@ -39,7 +39,19 @@ def _get_smrtlink_client():
         return None
 
 CLIENT = _get_smrtlink_client()
-    
+
+def get_dataset_jobs(id):
+    '''
+    Get jobs for a dataset by id from SMRT Link.
+    '''
+    return CLIENT.get_dataset_jobs(id)
+
+def get_job_files(id):
+    '''
+    Get files for a job by id from SMRT Link.
+    '''
+    return CLIENT.get_job_datastore(id)
+
 def get_project(id):
     '''
     Get a project from SMRT Link by id by calling get_project_dict method.
@@ -54,13 +66,19 @@ def get_project(id):
 
 def get_new_project():
     '''
-    Get the most recent project from SMRT Link.
-    Raises error there is a problem with the connection to SMRT Link.
+    Get the most recent project from SMRT Link, or None if there are no projects.
+
+    Raises error if there is a problem with the connection to SMRT Link,
+    or OutOfSyncError if the most recent project in SMRT Link turns 
+    out to not be new to the app.
     '''
     sl_ids = CLIENT.get_project_ids()
     project_d = CLIENT.get_project_dict(sl_ids[-1])
     if project_d:
-        return Project(**project_d)
+        project = Project(**project_d)
+        if type(project) is UpdatedProject:
+            raise OutOfSyncError(project)
+        return project
     return None
 
 def load_db():
