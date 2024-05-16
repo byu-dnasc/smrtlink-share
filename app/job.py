@@ -1,6 +1,6 @@
 from app.collection import Analysis
 import app.smrtlink as smrtlink
-from app.state import AnalysisModel
+from app.state import AnalysisModel, LastJobUpdate
 
 def _get_job_project_dataset(job_id):
     rows = (AnalysisModel.select(AnalysisModel.project_id,
@@ -27,7 +27,7 @@ def get_analyses(datasets, project_id):
                                 job_d['id'], 
                                 files)
 
-def get_new(created_after):
-    query = 'gte:' + created_after
-    jobs = smrtlink.CLIENT.get_analysis_jobs(createdAt=query)
-    job_d = jobs[0]
+def update():
+    query = 'gt:' + LastJobUpdate.time()
+    new_jobs = smrtlink.CLIENT.get_analysis_jobs(createdAt=query)
+    
