@@ -4,28 +4,30 @@ from app.project import NewProject, UpdatedProject
 from app import logger, OutOfSyncError
 import app.job as job
 
-def _stage_new_project(project):
+def _stage(project):
     '''
-    Stage a new project. Return True if successful, False otherwise.
+    Stage a NewProject or UpdatedProject. Return True if successful, False otherwise.
     Log an error if staging raises an exception.
     '''
     try:
-        staging.new(project)
+        if type(project) is NewProject:
+            staging.new(project)
+        elif type(project) is UpdatedProject:
+            staging.update(project)
+        else:
+            raise Exception(f'Expected a NewProject or UpdatedProject, but received a {type(project)}.')
     except Exception as e:
         logger.error(f'Cannot stage project: {e}.')
         return False
     return True
 
-def _stage(project):
-    if type(project) is NewProject:
-        return _stage_new_project(project)
-    elif type(project) is UpdatedProject:
-        return _stage_project_update(project)
-    else:
-        logger.error(f'Cannot stage project: {project} is not a recognized project type.')
-        return False
-
 def _get_new_project():
+    '''
+    Get the most recent project from SMRT Link. This project is expected to be a NewProject,
+    but may be an UpdatedProject if the app is Out-of-Sync with SMRT Link.
+
+    Return project. Return None if there are no projects, or if an error occurs.
+    '''
     try:
         project = smrtlink.get_new_project()
         if project is None:
@@ -38,16 +40,13 @@ def _get_new_project():
         logger.error(f'Cannot handle new project request: {e}.')
     return None
 
-def new_project():
-    project = _get_new_project()
-    if project is None:
-        return
-    if _stage(project):
-        project.save() # only update database if staging was successful
-    analyses = job.get_analyses(project.datasets, project.id)
-
 def _get_project(project_id):
-    '''Return project if found, else None and log error.'''
+    '''
+    Get a project by id from SMRT Link. The project is expected to be an UpdatedProject,
+    but may be a NewProject if the app is Out-of-Sync with SMRT Link.
+
+    Return project if found. Return None if the project is not found, or if an error occurs.
+    '''
     try:
         return smrtlink.get_project(project_id)
     except OutOfSyncError as e:
@@ -57,10 +56,21 @@ def _get_project(project_id):
         logger.error(f'Cannot handle project update request: {e}.')
         return None
 
+def new_project():
+    '''
+    Handle a notification that a new project was created in SMRT Link.
+    '''
+    project = _get_new_project()
+    if project is None:
+        return
+    if _stage(project):
+        project.save() # only update database if staging was successful
+
 def update_project(project_id):
-    '''Stage project by updating previously staged project files, unless
-    the turns out to be new to the app, in which case stage the project
-    using another method.
+    '''
+    Handle a notification that a given project was updated in SMRT Link.
+
+    `project_id` is the id of the project in SMRT Link.
     '''
     project = _get_project(project_id)
     if project is None:
@@ -72,7 +82,3 @@ def delete_project(project_id):
     ... # delete project from database
     ... # delete project files
     ... # delete project permissions in Globus
- 
-def new_job(created_after):
-    job_d = job.get_new()
-    projects, datasets, job_d = job.get(job_id)
