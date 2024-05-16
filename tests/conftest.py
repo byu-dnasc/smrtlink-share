@@ -1,27 +1,3 @@
-import pytest
-import peewee as pw
-
-# Configure environment variables
-import dotenv
-dotenv.load_dotenv()
-
-from app.project import ProjectModel, ProjectDataset, ProjectMember
-import app
-
-# import modules that rely on environment variables
-import app.smrtlink as smrtlink
-from app.globus import AccessRuleId
-
-@pytest.fixture(autouse=True)
-def init_db():
-    app.db = pw.SqliteDatabase(':memory:')
-    ProjectModel.bind(app.db)
-    ProjectDataset.bind(app.db)
-    ProjectMember.bind(app.db)
-    app.db.create_tables([ProjectModel,
-                          ProjectDataset, 
-                          ProjectMember], 
-                          safe=True)
-    yield
-    app.db.close()
-
+ADMIN_ID = "19ff6717-c44d-4ab4-983c-1eb2095beba4" # aknaupp@byu.edu
+NON_ADMIN_ID = "65af3497-1ad5-4a79-8c5b-cec928605c1c" # adkna@byu.edu
+DNASC_ID = "45a581b4-78bc-4475-83b0-55849ea0ca11" # dnasc@globusid.org
