@@ -166,7 +166,9 @@ class Dataset(FileCollection):
     def __init__(self, **kwargs):
         self.id = kwargs['uuid']
         self.xml = DatasetXml(kwargs['path'])
-        self.name = get_sample_name(self.xml)
+        self.name = kwargs['name']
+        if 'parentUuid' in kwargs:
+            self.name = get_sample_name(self.xml)
         self.movie_id = get_movie_id(self.xml)
     
     @property
