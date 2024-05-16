@@ -1,7 +1,6 @@
 import os
 import logging
 import dotenv
-import peewee as pw
 
 if not os.path.exists('.env'):
     raise ImportError('.env file not found.')
@@ -22,11 +21,6 @@ try:
     STAGING_ROOT = os.environ.get('STAGING_ROOT')
 except KeyError as e:
     raise ImportError(f"Variable {e} not found in .env file.")
-
-try:
-    db = pw.SqliteDatabase(DB_PATH)
-except Exception as e:
-    raise ImportError(f"Failed to initialize database: {e}")
 
 class OutOfSyncError(Exception):
     def __init__(self, project) -> None:
