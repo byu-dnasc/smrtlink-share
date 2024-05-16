@@ -1,6 +1,6 @@
 from unittest.mock import patch, MagicMock
 from app import OutOfSyncError
-from app.handling import new_project, _stage_new_project, update_project, _get_project
+from app.handling import new_project, update_project, _get_project
 from unittest.mock import patch
 from app.project import ProjectModel, NewProject, UpdatedProject
 
