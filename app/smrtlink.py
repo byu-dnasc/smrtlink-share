@@ -40,16 +40,28 @@ def _get_smrtlink_client():
 
 CLIENT = _get_smrtlink_client()
 
+def get_jobs_created_after(time):
+    '''
+    Get jobs from SMRT Link created after `time`.
+
+    `time`: a timestamp in the format 'YYYY-MM-DDTHH:MM:SS.sssZ'.
+    '''
+    return CLIENT.get_analysis_jobs(createdAt='gt:' + time)
+
+def get_job_datasets(id):
+    '''Get datasets for a job by id from SMRT Link.'''
+    return CLIENT.get_job_datasets(id)
+
+def get_job(id):
+    '''Get a job by id from SMRT Link.'''
+    return CLIENT.get_job(id)
+
 def get_dataset_jobs(id):
-    '''
-    Get jobs for a dataset by id from SMRT Link.
-    '''
+    '''Get jobs for a dataset by id from SMRT Link.'''
     return CLIENT.get_dataset_jobs(id)
 
 def get_job_files(id):
-    '''
-    Get files for a job by id from SMRT Link.
-    '''
+    '''Get files for a job by id from SMRT Link.'''
     return CLIENT.get_job_datastore(id)
 
 def get_project(id):
