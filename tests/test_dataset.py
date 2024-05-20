@@ -24,6 +24,25 @@ def test_dataset():
         'numChildren': 0,
     })
     assert type(ds) is Dataset
+    assert ds.name == 'dataset1'
+    assert ds.movie_id == 'm84100_240301_194028_s1'
+    assert len(ds.files) == 2
+
+def test_orphaned_child():
+    '''Test the case of a child dataset when the parent is not provided.
+
+    The presence of parentUuid signals that the dataset is a child, but
+    since this child has not parent, the only special treatment it gets
+    is to use the BioSample name "Tomato 21".
+    '''
+    ds = Dataset(**{
+        'name': 'dataset1',
+        'uuid': '1',
+        'path': TOMATO_21,
+        'numChildren': 0,
+        'parentUuid': 'parent_uuid'
+    })
+    assert type(ds) is Dataset
     assert ds.name == 'Tomato 21'
     assert ds.movie_id == 'm84100_240301_194028_s1'
     assert len(ds.files) == 2
@@ -58,7 +77,7 @@ def test_supplemental_resources():
     assert ds.files == ['file1', 'file2']
 
 def test_analysis():
-    ds = collection.AnalysisModel('parent', 'name', 1, ['file'])
+    ds = collection.Analysis('parent', 'name', 1, ['file'])
     assert ds.prefix    
     assert ds.dir_name
     assert ds.files
