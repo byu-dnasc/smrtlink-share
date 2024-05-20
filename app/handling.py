@@ -82,3 +82,9 @@ def delete_project(project_id):
     ... # delete project from database
     ... # delete project files
     ... # delete project permissions in Globus
+
+def update_analyses():
+    pending_analyses, completed_analyses = job.get_analyses()
+    for analysis in completed_analyses:
+        staging.stage_analysis(analysis)
+    job.track(pending_analyses, staging.stage_analysis)
