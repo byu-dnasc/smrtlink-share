@@ -30,11 +30,6 @@ class ProjectMember(AppModel):
     project_id = pw.ForeignKeyField(ProjectModel, backref='_members')
     member_id = pw.CharField()
 
-class AnalysisModel(AppModel):
-    project_id = pw.IntegerField()
-    dataset_id = pw.CharField(max_length=50)
-    analysis_id = pw.IntegerField
-
 class LastJobUpdate(AppModel):
     '''
     A class defining a table with a single row which stores a timestamp.
