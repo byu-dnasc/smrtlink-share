@@ -5,7 +5,7 @@ import pwd
 import peewee as pw
 
 from app.project import Project, ProjectDataset, ProjectMember
-from app import STAGING_ROOT, APP_USER, GROUP_NAME
+from app import STAGING_ROOT, APP_USER, GROUP_NAME, APP_PORT
 import app.smrtlink as smrtlink
 import app.globus as globus
 import app.staging as staging
@@ -60,6 +60,6 @@ if gid != os.getgid():
 # initialize and run the app
 from app.server import App
 
-app = App(('localhost', 9093))
+app = App(('localhost', APP_PORT))
 
 app.run()

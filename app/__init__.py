@@ -22,6 +22,8 @@ try:
 except KeyError as e:
     raise ImportError(f"Variable {e} not found in .env file.")
 
+APP_PORT = 9093
+
 class OutOfSyncError(Exception):
     def __init__(self, project) -> None:
         self.project = project
