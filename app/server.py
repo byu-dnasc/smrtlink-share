@@ -1,11 +1,8 @@
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from time import sleep
 from app import logger
-from app.handling import new_project, update_project, delete_project
+import app.handling as handling
 import re
-
-class InvalidRequestError(Exception):
-    pass
 
 def _get_project_id(uri):
     '''Try to get project ID from URI, return None if not found'''
@@ -20,9 +17,17 @@ class RequestHandler(BaseHTTPRequestHandler):
     Respond to and log requests, then handle them asynchronously
     '''
     def _log_request(self, response_code):
+        '''Log the request. Due for a re-design next time a new type of request
+        needs to be supported.
+        '''
         if response_code == 200:
             if self.command == 'POST':
-                logger.info(f'Received notification that a new project was created in SMRT Link')
+                if self.path == '/smrt-link/projects':
+                    logger.info(f'Received notification that a new project was created in SMRT Link')
+                elif self.path == '/smrt-link/job-manager/jobs/analysis':
+                    logger.info(f'Received notification that a new analysis job was created in SMRT Link')
+                else:
+                    logger.info(f'Received request: {self.command} {self.path}')
             elif self.command == 'PUT':
                 logger.info(f'Received notification that project {self.project_id} was modified in SMRT Link')
             elif self.command == 'DELETE':
@@ -41,7 +46,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(b'smrtlink-share app is online')
 
     def _get_response_code(self):
-        '''Return the appropriate response code for the request'''
+        '''Return the appropriate response code for the request
+        given the method and path of the request.
+        '''
         assert self.command in ('POST', 'PUT', 'DELETE')
         if self.command in ('PUT', 'DELETE'):
             if self.project_id:
@@ -50,8 +57,11 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return 200
             return 404
         else: # POST
-            return 200 if self.path == '/smrt-link/projects' \
-                        else 404
+            if self.path == '/smrt-link/projects' or \
+                self.path == '/smrt-link/job-manager/jobs/analysis':
+                return 200
+            else:
+                return 404
             
     def handle_response(self):
         response_code = self._get_response_code()
@@ -77,18 +87,23 @@ class RequestHandler(BaseHTTPRequestHandler):
         if not self.handle_response():
             return
         sleep(1)
-        update_project(self.project_id)        
+        handling.update_project(self.project_id)        
     
     def do_POST(self):
         if not self.handle_response():
             return
         sleep(1)
-        new_project()
+        if self.path == '/smrt-link/projects':
+            handling.new_project()
+        elif self.path == '/smrt-link/job-manager/jobs/analysis':
+            handling.update_analyses()
+        else:
+            logger.error(f'Unexpected POST request: {self.path}')
         
     def do_DELETE(self):
         if not self.handle_response():
             return
-        delete_project(self.project_id)
+        handling.delete_project(self.project_id)
 
 class App(ThreadingHTTPServer):
 
