@@ -3,6 +3,7 @@ from os.path import join
 from pbcore.io.dataset.DataSetIO import DataSet as DatasetXml
 from pbcore.io.dataset.DataSetMembers import ExternalResource, ExternalResources
 from app import logger
+from app.state import ProjectDataset
 
 def _get_file_path(res, file_paths):
     '''
@@ -109,13 +110,13 @@ class FileCollection(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def dir_name(self) -> str:
+    def _dir_name(self) -> str:
         '''Return the name of the directory where this dataset should be staged.'''
         pass
 
     @property
     @abc.abstractmethod
-    def prefix(self) -> str:
+    def _prefix(self) -> str:
         '''
         Return the path prefix of the directory where this dataset should be staged.
 
@@ -128,25 +129,43 @@ class FileCollection(abc.ABC):
     @property
     def dir_path(self) -> str: # this method is meant to be inherited by all subclasses
         '''Return the path to the directory where this dataset should be staged.'''
-        return join(self.prefix, self.dir_name)
+        return join(self._prefix, self._dir_name)
 
-class Analysis(FileCollection):
-    def __init__(self, parent_dir, name, id, files):
+class PendingAnalysis:
+    def __init__(self, dataset_id: str, job: dict, files: list):
+        self.dataset_id = dataset_id
+        self.id = job['id']
+        self.files = files
+    
+    def complete(self, job):
+        '''Return a CompletedAnalysis object for this analysis.'''
+        return CompletedAnalysis(self.dataset_id, job, self.files)
+    
+def _get_dataset_dir(id):
+    dataset_model = ProjectDataset.get_or_none(ProjectDataset.dataset_id == id)
+    if dataset_model:
+        return dataset_model.staging_dir
+    return None
+
+class CompletedAnalysis(FileCollection):
+    def __init__(self, dataset_id, job, files):
         '''
-        `parent_dir`: the directory in which the new directory for these analysis 
-        files should be created.
+        raises ValueError if no dataset is found in the database with the given ID.
         '''
-        self.parent_dir = parent_dir
-        self.name = name
+        self.parent_dir = _get_dataset_dir(dataset_id)
+        if self.parent_dir is None:
+            raise ValueError(f'No dataset found with ID {dataset_id}')
+        self.name = job['name']
         self._files = files
-        self.id = id
+        self.id = job['id']
+        self.project_id = job['project_id']
     
     @property
-    def prefix(self):
+    def _prefix(self):
         return self.parent_dir
    
     @property
-    def dir_name(self):
+    def _dir_name(self):
         return f'Analysis {self.id}: {self.name}'
     
     @property
@@ -172,11 +191,11 @@ class Dataset(FileCollection):
         self.movie_id = get_movie_id(self.xml)
     
     @property
-    def prefix(self):
-        return super().prefix # empty string
+    def _prefix(self):
+        return super()._prefix # empty string
 
     @property
-    def dir_name(self):
+    def _dir_name(self):
         return f'Movie {self.movie_id} - {self.name}'
     
     @property
@@ -200,20 +219,20 @@ class Parent(Dataset):
         self.child_datasets = []
         for child_dict in child_dataset_dicts:
             try:
-                dataset = Child(self.dir_name, **child_dict) 
+                dataset = Child(self._dir_name, **child_dict) 
             except Exception as e:
                 logger.error(f"Cannot handle SMRT Link dataset {child_dict['id']}: {e}.")
                 continue
             self.child_datasets.append(dataset)
-        self.child_datasets.append(SupplementalResources(self.dir_name, self.files))
+        self.child_datasets.append(SupplementalResources(self._dir_name, self.files))
 
     @property
-    def prefix(self):
-        return super().prefix
+    def _prefix(self):
+        return super()._prefix
     
     @property
-    def dir_name(self):
-        return f'{super().dir_name} ({self.num_children} barcoded samples)'
+    def _dir_name(self):
+        return f'{super()._dir_name} ({self.num_children} barcoded samples)'
     
     @property
     def files(self):
@@ -234,11 +253,11 @@ class Child(Dataset):
         self.parent_dir = parent_dir
     
     @property
-    def prefix(self):
+    def _prefix(self):
         return self.parent_dir
 
     @property
-    def dir_name(self):
+    def _dir_name(self):
         return f'{self.name} ({self.barcode})'
 
 class SupplementalResources(FileCollection):
@@ -247,11 +266,11 @@ class SupplementalResources(FileCollection):
         self._files = files
     
     @property
-    def prefix(self):
+    def _prefix(self):
         return self.parent_dir
     
     @property
-    def dir_name(self):
+    def _dir_name(self):
         return 'Supplemental Run Data'
 
     @property
