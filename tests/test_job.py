@@ -81,12 +81,12 @@ def test_get_new_jobs_success(get_jobs_created_after, LastJobUpdate):
 @patch('app.job._get_dataset_dirs')
 @patch('app.job.smrtlink.get_job_files')
 @patch('app.job.smrtlink.get_job_datasets')
-def test_get_analyses(get_job_datasets, get_job_files, get_dataset_dirs, get_new_jobs):
+def test_get_new_analyses(get_job_datasets, get_job_files, get_dataset_dirs, get_new_jobs):
     get_new_jobs.return_value = [{'name': 'analyze', "id": "123", "state": "FAILED"}]
     get_job_datasets.return_value = [1]
     get_dataset_dirs.return_value = ["dir1"]
     get_job_files.return_value = ["file1"]
-    completed, pending = job.get_analyses()
+    completed, pending = job.get_new_analyses()
 
     assert len(completed) == 0
     assert len(pending) == 0
@@ -95,7 +95,7 @@ def test_get_analyses(get_job_datasets, get_job_files, get_dataset_dirs, get_new
     get_job_datasets.return_value = [1]
     get_dataset_dirs.return_value = ["dir1"]
     get_job_files.return_value = ["file1"]
-    completed, pending = job.get_analyses()
+    completed, pending = job.get_new_analyses()
 
     assert len(completed) == 1
     assert len(pending) == 0
@@ -104,7 +104,7 @@ def test_get_analyses(get_job_datasets, get_job_files, get_dataset_dirs, get_new
     get_job_datasets.return_value = [1]
     get_dataset_dirs.return_value = ["dir1"]
     get_job_files.return_value = ["file1"]
-    completed, pending = job.get_analyses()
+    completed, pending = job.get_new_analyses()
 
     assert len(completed) == 0
     assert len(pending) == 1
