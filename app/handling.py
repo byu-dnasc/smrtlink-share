@@ -1,6 +1,7 @@
 import app.smrtlink as smrtlink
 import app.staging as staging
-from app.project import NewProject, UpdatedProject
+import app.globus as globus
+from app.project import NewProject, Project, UpdatedProject
 from app import logger, OutOfSyncError
 import app.job as job
 
@@ -20,6 +21,17 @@ def _stage(project):
         logger.error(f'Cannot stage project: {e}.')
         return False
     return True
+
+def _stage_analyses(completed, pending):
+    '''
+    Stage completed analyses, and track pending analyses.
+    '''
+    for analysis in completed:
+        project = Project(id=analysis.project_id)
+        staging.analysis(project, analysis)
+    for completed_analysis in job.track(pending):
+        project = Project(id=completed_analysis.project_id)
+        staging.analysis(project, completed_analysis)
 
 def _get_new_project():
     '''
@@ -65,18 +77,31 @@ def new_project():
         return
     if _stage(project):
         project.save() # only update database if staging was successful
+    globus.new(project) # TODO: handle exceptions
+    try:
+        completed, pending = job.get_project_analyses(project.id)
+    except Exception as e:
+        logger.error(f'Failed to get new analyses: {e}')
+        return
+    _stage_analyses(completed, pending)
 
 def update_project(project_id):
     '''
     Handle a notification that a given project was updated in SMRT Link.
 
-    `project_id` is the id of the project in SMRT Link.
+    In addition to updating the project, this function stages any 
+    completed analyses associated with the project which have not already
+    been staged. This staging is redundant, but is intended as a backup 
+    in case the app did not receive a notification for a new analysis.
     '''
     project = _get_project(project_id)
     if project is None:
         return
     if _stage(project):
         project.save()
+    globus.update(project) # TODO: handle exceptions
+    for analysis in job.get_new_project_analyses(project.id):
+        staging.analysis(project, analysis)
     
 def delete_project(project_id):
     ... # delete project from database
@@ -84,7 +109,9 @@ def delete_project(project_id):
     ... # delete project permissions in Globus
 
 def update_analyses():
-    pending_analyses, completed_analyses = job.get_analyses()
-    for analysis in completed_analyses:
-        staging.stage_analysis(analysis)
-    job.track(pending_analyses, staging.stage_analysis)
+    try:
+        pending_analyses, completed_analyses = job.get_new_analyses()
+    except Exception as e:
+        logger.error(f'Failed to update analyses: {e}')
+        return
+    _stage_analyses(completed_analyses, pending_analyses)
