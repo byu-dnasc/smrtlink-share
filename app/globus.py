@@ -1,6 +1,7 @@
 import globus_sdk
 import peewee as pw
 from app import GLOBUS_CLIENT_ID, GLOBUS_CLIENT_SECRET, GLOBUS_COLLECTION_ID
+from app.project import NewProject, UpdatedProject
 
 ACL_CREATION_SCOPE='urn:globus:auth:scope:transfer.api.globus.org:all'
 
@@ -51,10 +52,6 @@ def get_access_rules():
     return TRANSFER_CLIENT.endpoint_acl_list(GLOBUS_COLLECTION_ID)
 
 def _delete_access_rule(access_rule_id):
-    '''
-    Use case 1: receive request to delete a project (get rule id from database)
-    Use case 2: access rule is too old (get rule id directly from Globus)
-    '''
     try:
         TRANSFER_CLIENT.delete_endpoint_acl_rule(GLOBUS_COLLECTION_ID, access_rule_id)
     except globus_sdk.TransferAPIError:
@@ -74,3 +71,15 @@ def delete_access_rule(user_id, project_id):
 def get_project_access_rule_ids(project_id):
     ids = AccessRuleId.select().where(AccessRuleId.project_id == project_id)
     return [id.rule_id for id in ids]
+
+def new(project: NewProject):
+    for member in project.members:
+        add_access_rule(member, project.dir_name, project.id)
+
+def update(project: UpdatedProject):
+    if hasattr(project, "members_to_add"):
+        for member in project.members_to_add:
+            add_access_rule(member, project.dir_name, project.id)
+    if hasattr(project, "members_to_remove"):
+        for member in project.members_to_remove:
+            delete_access_rule(member, project.id)
