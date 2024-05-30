@@ -8,25 +8,30 @@ When you query SMRT Link for a project's data, if a parent dataset
 is in the project, then its children are not returned.
 '''
 
+def get_project_dir_name(id, name):
+    return f'Project {id}: {name}'
+
 class Project:
     '''Use to instantiate NewProject and UpdatedProject'''
-    def __new__(cls, **project_d):
-        if 'datasets' in project_d and 'members' in project_d:
-            if not 'id' in project_d or not 'name' in project_d:
-                raise ValueError('Missing arguments to Project.__new__')
-            project_exists = (ProjectModel.select()
-                                    .where(ProjectModel.id == project_d['id'])
-                                    .exists())
-            if project_exists:
-                return super(Project, cls).__new__(UpdatedProject)
-            return super(Project, cls).__new__(NewProject)
-        else:
-            raise ValueError('Missing arguments to Project.__new__')
+    def __new__(cls, **kwargs):
+        if 'id' in kwargs or 'name' in kwargs:
+            if 'datasets' in kwargs and 'members' in kwargs:
+                project_exists = (ProjectModel.select()
+                                        .where(ProjectModel.id == kwargs['id'])
+                                        .exists())
+                if project_exists:
+                    return super(Project, cls).__new__(UpdatedProject)
+                return super(Project, cls).__new__(NewProject)
+            return super(Project, cls).__new__(cls)
+        raise ValueError('Missing arguments to Project.__new__')
     
-    def __init__(self, id, name):
-        self.id = str(id)
-        self.name = name
-        self.dir_name = f'Project {self.id}: {self.name}'
+    def __init__(self, **kwargs):
+        self.id = str(kwargs['id'])
+        if 'name' in kwargs:
+            self.name = kwargs['name']
+        else:
+            self.name = ProjectModel.get_by_id(kwargs['id']).name
+        self.dir_name = get_project_dir_name(self.id, self.name)
         
 def get_member_ids(project_d):
     '''Return a list of member ids from a dictionary of project data
@@ -47,7 +52,7 @@ def create_dataset(ds_dct):
 class UpdatedProject(Project):
     '''
     An UpdatedProject may optionally include each of the following attributes:
-    - `old_name`: the project's previous name.
+    - `old_dir_name`: the project's current directory name.
     - `datasets`: a list of Dataset instances for staging.
     - `dirs_to_remove`: a list of relative paths to directories used to stage
         datasets that are no longer part of the project and should be removed.
@@ -56,11 +61,11 @@ class UpdatedProject(Project):
         be revoked.
     '''
     def __init__(self, **project_d):
-        super().__init__(project_d['id'], project_d['name'])
+        super().__init__(project_d)
         # Identify changes between the instance and the database.
         db_project = ProjectModel.get(ProjectModel.id == int(self.id))
         if self.name != db_project.name:
-            self.old_name = db_project.name
+            self.old_dir_name = get_project_dir_name(db_project.id, db_project.name)
         current_dataset_ids = {ds_dict['uuid'] for ds_dict in project_d['datasets']}
         stale_dataset_ids = {dataset.dataset_id for dataset in db_project.datasets}
         new_dataset_ids = list(current_dataset_ids - stale_dataset_ids)
@@ -84,7 +89,7 @@ class UpdatedProject(Project):
             self.members_to_remove = list(stale_members - current_members)
 
     def save(self):
-        if hasattr(self, 'old_name'):
+        if hasattr(self, 'old_dir_name'):
             (ProjectModel.update(name=self.name)
                         .where(ProjectModel.id == self.id)
                         .execute())
@@ -118,7 +123,7 @@ class NewProject(Project):
         '''
         Initialize a NewProject instance using project data from SMRT Link.
         '''
-        super().__init__(project_d['id'], project_d['name'])
+        super().__init__(project_d)
         self._other_datasets = []
         for ds_dct in project_d['datasets']:
             dataset = create_dataset(ds_dct)
