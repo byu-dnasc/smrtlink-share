@@ -58,22 +58,24 @@ def _dicts_to_datasets(dataset_dicts):
             child_datasets.extend(ds.child_datasets)
     return other_datasets + child_datasets
 
-def _get_effects(datasets):
-    if not datasets:
+def _get_effects(dataset_ids):
+    '''Get the union of the dataset ids in the parameter and the dataset ids
+    in the database
+    '''
+    if not dataset_ids:
         return []
-    dataset_ids = [ds.id for ds in datasets]
     stolen_dataset_rows = (ProjectDataset.select()
                             .where(ProjectDataset.dataset_id.in_(dataset_ids))
                             .execute())
-    if stolen_dataset_rows:
-        rows_by_project_id = defaultdict(list) # dict but any key gets a default value assigned by list()
-        for row_d in stolen_dataset_rows:
-            rows_by_project_id[row_d['project_id']].append(row_d)
-        for project_id in rows_by_project_id:
-            project = UpdatedProject(id=project_id)
-            project._datasets_to_remove = [row.dataset_id for row in rows_by_project_id[project_id]]
-            project.dirs_to_remove = [row.staging_dir for row in rows_by_project_id[project_id]]
-            yield project
+    rows_by_project_id = defaultdict(list) # dict but any key gets a default value assigned by list()
+    for row in stolen_dataset_rows:
+        rows_by_project_id[row.project_id].append(row)
+    # generate a list of UpdatedProject instances, one for each project from which a dataset was stolen
+    for project_id in rows_by_project_id:
+        project = UpdatedProject(id=project_id)
+        project._datasets_to_remove = [row.dataset_id for row in rows_by_project_id[project_id]]
+        project.dirs_to_remove = [row.staging_dir for row in rows_by_project_id[project_id]]
+        yield project
 
 class UpdatedProject(Project):
     '''
@@ -112,14 +114,14 @@ class UpdatedProject(Project):
 
     def __init__(self, **kwargs):
         self.old_dir_name = None
-        self.new_datasets = None
-        self.dirs_to_remove = None
-        self.new_members = None
-        self.members_to_remove = None
+        self.new_datasets = []
+        self.dirs_to_remove = []
+        self.new_members = []
+        self.members_to_remove = []
         if 'name' in kwargs: # use instance to handle a project update
             super().__init__(**kwargs)
             self._set_updates(**kwargs)
-            self.effects = _get_effects(self.new_datasets)
+            self.effects = _get_effects([ds.id for ds in self.new_datasets if isinstance(ds, Dataset)])
         else: # use instance to handle stolen datasets
             super().__init__(id=kwargs['id'])
 
@@ -164,7 +166,7 @@ class NewProject(Project):
         assert 'datasets' in project_d and 'members' in project_d
         self.datasets = _dicts_to_datasets(project_d['datasets'])
         self.members = _get_member_ids(project_d['members'])
-        self.effects = _get_effects(self.datasets)
+        self.effects = _get_effects([ds.id for ds in self.datasets if isinstance(ds, Dataset)])
 
     def save(self):
         '''
