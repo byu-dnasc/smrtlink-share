@@ -5,7 +5,7 @@ from app.project import NewProject, UpdatedProject
 
 ACL_CREATION_SCOPE='urn:globus:auth:scope:transfer.api.globus.org:all'
 
-def get_authorizer(scope):
+def _get_authorizer(scope):
     return globus_sdk.ClientCredentialsAuthorizer(
         globus_sdk.ConfidentialAppAuthClient(
             GLOBUS_CLIENT_ID,
@@ -16,7 +16,7 @@ def get_authorizer(scope):
 
 def _get_transfer_client():
     try:
-        authorizer = get_authorizer(ACL_CREATION_SCOPE)
+        authorizer = _get_authorizer(ACL_CREATION_SCOPE)
         return globus_sdk.TransferClient(authorizer=authorizer)
     except Exception as e:
         return None
@@ -28,7 +28,7 @@ class AccessRuleId(pw.Model):
 
 TRANSFER_CLIENT = _get_transfer_client()
 
-def add_access_rule(user_id, project_path, project_id):
+def _add_access_rule(user_id, project_path, project_id):
     rule_data = {
         "DATA_TYPE": "access",
         "principal_type": "identity",
@@ -48,7 +48,7 @@ def add_access_rule(user_id, project_path, project_id):
     except pw.OperationalError as e:
         pass # TODO Log the error
 
-def get_access_rules():
+def _get_access_rules():
     return TRANSFER_CLIENT.endpoint_acl_list(GLOBUS_COLLECTION_ID)
 
 def _delete_access_rule(access_rule_id):
@@ -56,30 +56,30 @@ def _delete_access_rule(access_rule_id):
         TRANSFER_CLIENT.delete_endpoint_acl_rule(GLOBUS_COLLECTION_ID, access_rule_id)
     except globus_sdk.TransferAPIError:
         pass # TODO Log the error
-    # delete from database
-    AccessRuleId.delete().where(AccessRuleId.rule_id == access_rule_id).execute()
 
-def _get_access_rule_id(user_id, project_id):
-    return (AccessRuleId.select()
-                .where(AccessRuleId.project_id == project_id)
-                .where(AccessRuleId.globus_user_id == user_id))
-
-def delete_access_rule(user_id, project_id):
-    rule_id = _get_access_rule_id(user_id, project_id)
+def _delete_member(user_id, project_id):
+    rule_id = (AccessRuleId.select(AccessRuleId.rule_id)
+                            .where(AccessRuleId.project_id == project_id,
+                                   AccessRuleId.globus_user_id == user_id)
+                            .execute())
     _delete_access_rule(rule_id)
+    AccessRuleId.delete().where(AccessRuleId.rule_id == rule_id).execute()
 
-def get_project_access_rule_ids(project_id):
+def _get_project_access_rule_ids(project_id):
     ids = AccessRuleId.select().where(AccessRuleId.project_id == project_id)
     return [id.rule_id for id in ids]
 
 def new(project: NewProject):
     for member in project.members:
-        add_access_rule(member, project.dir_name, project.id)
+        _add_access_rule(member, project.dir_name, project.id)
 
 def update(project: UpdatedProject):
-    if project.new_members:
-        for member in project.new_members:
-            add_access_rule(member, project.dir_name, project.id)
-    if project.members_to_remove:
-        for member in project.members_to_remove:
-            delete_access_rule(member, project.id)
+    for member in project.new_members:
+        _add_access_rule(member, project.dir_name, project.id)
+    for member in project.members_to_remove:
+        _delete_member(member, project.id)
+
+def delete(project_id):
+    rule_ids = _get_project_access_rule_ids(project_id)
+    for rule_id in rule_ids:
+        _delete_access_rule(rule_id)
