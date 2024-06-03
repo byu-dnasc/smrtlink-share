@@ -77,9 +77,9 @@ def new(project: NewProject):
         add_access_rule(member, project.dir_name, project.id)
 
 def update(project: UpdatedProject):
-    if hasattr(project, "members_to_add"):
-        for member in project.members_to_add:
+    if project.new_members:
+        for member in project.new_members:
             add_access_rule(member, project.dir_name, project.id)
-    if hasattr(project, "members_to_remove"):
+    if project.members_to_remove:
         for member in project.members_to_remove:
             delete_access_rule(member, project.id)
