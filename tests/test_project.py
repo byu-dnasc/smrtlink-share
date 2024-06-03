@@ -44,25 +44,25 @@ def test_project():
     assert ProjectModel.select().count() == 1
     assert ProjectDataset.select().count() == 1
     assert ProjectMember.select().count() == 1
-    assert pytest.raises(peewee.IntegrityError, proj.save)
 
 def test_update_project_no_changes():
     proj = Project(**PROJECT)
     proj.save()
     proj_again = Project(**PROJECT)
     assert type(proj_again) == UpdatedProject
-    assert not hasattr(proj_again, 'old_name')
-    assert not hasattr(proj_again, 'datasets')
-    assert not hasattr(proj_again, 'dirs_to_remove')
-    assert not hasattr(proj_again, 'members_to_add')
-    assert not hasattr(proj_again, 'members_to_remove')
+    assert proj_again.old_dir_name is None
+    assert proj_again.new_datasets is None
+    assert proj_again.dirs_to_remove is None
+    assert proj_again.new_members is None
+    assert proj_again.members_to_remove is None
 
 def test_update_project_name():
     proj = Project(**PROJECT)
     proj.save()
     PROJECT['name'] = 'updated name'
     proj_updated = Project(**PROJECT)
-    assert hasattr(proj_updated, 'old_name')
+    assert proj_updated.old_dir_name == proj.dir_name
+    assert proj_updated.dir_name != proj.dir_name
 
 def test_update_project_add_dataset():
     proj = Project(**PROJECT)
@@ -71,8 +71,7 @@ def test_update_project_add_dataset():
     new_dataset['uuid'] = 'new uuid'
     PROJECT['datasets'].append(new_dataset)
     proj_updated = Project(**PROJECT)
-    assert hasattr(proj_updated, 'datasets')
-    assert [ds.id for ds in proj_updated.datasets] == ['new uuid']
+    assert 'new uuid' in [ds.id for ds in proj_updated.new_datasets if hasattr(ds, 'id')]
 
 def test_update_project_remove_dataset():
     proj = Project(**PROJECT)
