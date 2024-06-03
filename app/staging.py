@@ -2,6 +2,7 @@ from os import makedirs, link, rename, stat, remove, walk, rmdir, umask
 import pwd
 from os.path import join, basename, exists
 from app import STAGING_ROOT, APP_USER, logger
+from app.project import UpdatedProject
 
 umask(0) # allow permissions to be specified explicitly
 DIR_PERMISSION=0o1775 # allow group to add and remove their own files, but not delete the directory
@@ -40,24 +41,24 @@ def _add_datasets(project):
         _make_dir(dataset_dir)
         _stage_dataset(dataset_dir, dataset)
 
-def _remove_datasets(project):
-    for dataset_path in project.datasets_to_remove:
+def _remove_dataset_dirs(project):
+    for dataset_path in project.dirs_to_remove:
         _delete_dir(dataset_path)
 
-def update(project):
-    if hasattr(project, 'old_dir_name'):
+def update(project: UpdatedProject):
+    if project.old_dir_name:
         try:
             _rename_project(project)
         except Exception as e:
             logger.error(f'Failed to rename project {project.id}: {e}')
-    if hasattr(project, 'datasets_to_add'):
+    if project.new_datasets:
         try:
             _add_datasets(project)
         except Exception as e:
             logger.error(f'Failed to create new dataset files: {e}')
-    if hasattr(project, 'datasets_to_remove'):
+    if project.dirs_to_remove:
         try:
-            _remove_datasets(project)
+            _remove_dataset_dirs(project)
         except Exception as e:
             logger.error(f'Failed to remove dataset files: {e}')
 
