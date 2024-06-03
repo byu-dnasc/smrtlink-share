@@ -72,11 +72,14 @@ def new_project():
     '''
     Handle a notification that a new project was created in SMRT Link.
     '''
-    project = _get_new_project()
+    project: Project = _get_new_project()
     if project is None:
         return
     if _stage(project):
         project.save() # only update database if staging was successful
+    for updated_project in project.effects:
+        _stage(updated_project)
+        updated_project.save() # remove rows associating stolen datasets with their previous project
     globus.new(project) # TODO: handle exceptions
     try:
         completed, pending = job.get_project_analyses(project.id)
@@ -99,6 +102,9 @@ def update_project(project_id):
         return
     if _stage(project):
         project.save()
+    for updated_project in project.effects:
+        _stage(updated_project)
+        updated_project.save() # remove rows associating stolen datasets with their previous project
     globus.update(project) # TODO: handle exceptions
     for analysis in job.get_new_project_analyses(project.id):
         staging.analysis(project, analysis)
