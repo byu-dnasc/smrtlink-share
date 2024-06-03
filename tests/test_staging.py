@@ -1,7 +1,6 @@
 from os import listdir, mkdir, makedirs, link, rename, stat, remove, walk
 from os.path import join, basename, dirname, exists, isdir
 import app.staging as staging
-from app.staging import DatasetDirectory
 import shutil
 import pytest
 import os
