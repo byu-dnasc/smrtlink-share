@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from app import logger
 from app.collection import Dataset, Parent, Child
 from app.state import ProjectModel, ProjectDataset, ProjectMember
@@ -26,6 +28,8 @@ class Project:
         raise ValueError('Missing arguments to Project.__new__')
     
     def __init__(self, **kwargs):
+        '''id is a required kwarg, name is optional'''
+        assert 'id' in kwargs
         self.id = str(kwargs['id'])
         if 'name' in kwargs:
             self.name = kwargs['name']
@@ -33,36 +37,57 @@ class Project:
             self.name = ProjectModel.get_by_id(kwargs['id']).name
         self.dir_name = get_project_dir_name(self.id, self.name)
         
-def get_member_ids(project_d):
+def _get_member_ids(members):
     '''Return a list of member ids from a dictionary of project data
     from SMRT Link. Exclude the project owner from the list of members.
     '''
     return [member['login']
-            for member in project_d['members'] 
+            for member in members
             if member['role'] != 'OWNER']
 
-def create_dataset(ds_dct):
-    '''Create a Dataset instance from a dictionary.'''
-    try:
-        return Dataset(**ds_dct)
-    except Exception as e:
-        logger.error(f"Cannot handle SMRT Link dataset {ds_dct['id']}: {e}.")
-        return None
+def _dicts_to_datasets(dataset_dicts):
+    other_datasets = []
+    for ds_dct in dataset_dicts:
+        try:
+            other_datasets.append(Dataset(**ds_dct))
+        except Exception as e:
+            logger.error(f"Cannot handle SMRT Link dataset {ds_dct['id']}: {e}.")
+    child_datasets = []
+    for ds in other_datasets:
+        if type(ds) is Parent: # then its children are not explicitly in the project
+            child_datasets.extend(ds.child_datasets)
+    return other_datasets + child_datasets
+
+def _get_effects(datasets):
+    if not datasets:
+        return []
+    dataset_ids = [ds.id for ds in datasets]
+    stolen_dataset_rows = (ProjectDataset.select()
+                            .where(ProjectDataset.dataset_id.in_(dataset_ids))
+                            .execute())
+    if stolen_dataset_rows:
+        rows_by_project_id = defaultdict(list) # dict but any key gets a default value assigned by list()
+        for row_d in stolen_dataset_rows:
+            rows_by_project_id[row_d['project_id']].append(row_d)
+        for project_id in rows_by_project_id:
+            project = UpdatedProject(id=project_id)
+            project._datasets_to_remove = [row.dataset_id for row in rows_by_project_id[project_id]]
+            project.dirs_to_remove = [row.staging_dir for row in rows_by_project_id[project_id]]
+            yield project
 
 class UpdatedProject(Project):
     '''
-    An UpdatedProject may optionally include each of the following attributes:
+    An UpdatedProject includes the following attributes:
     - `old_dir_name`: the project's current directory name.
-    - `datasets`: a list of Dataset instances for staging.
+    - `new_datasets`: a list of Dataset instances for staging.
     - `dirs_to_remove`: a list of relative paths to directories used to stage
         datasets that are no longer part of the project and should be removed.
-    - `members_to_add`: a list of member ids to share the project with.
+    - `new_members`: a list of member ids to share the project with.
     - `members_to_remove`: a list of member ids whose access to the project should
         be revoked.
     '''
-    def __init__(self, **project_d):
-        super().__init__(project_d)
-        # Identify changes between the instance and the database.
+    def _set_updates(self, **project_d):
+        assert 'datasets' in project_d and 'members' in project_d
         db_project = ProjectModel.get(ProjectModel.id == int(self.id))
         if self.name != db_project.name:
             self.old_dir_name = get_project_dir_name(db_project.id, db_project.name)
@@ -70,44 +95,56 @@ class UpdatedProject(Project):
         stale_dataset_ids = {dataset.dataset_id for dataset in db_project.datasets}
         new_dataset_ids = list(current_dataset_ids - stale_dataset_ids)
         if new_dataset_ids:
-            self.datasets = []
-            for ds_dict in project_d['datasets']:
-                if ds_dict['uuid'] in new_dataset_ids:
-                    dataset = create_dataset(ds_dict)
-                    if dataset:
-                        self.datasets.append(dataset)
+            new_dataset_dicts = [ds_d for ds_d in project_d['datasets']
+                                if ds_d['uuid'] in new_dataset_ids]
+            self.new_datasets = _dicts_to_datasets(new_dataset_dicts)
         self._datasets_to_remove = list(stale_dataset_ids - current_dataset_ids)
         if self._datasets_to_remove:
             self.dirs_to_remove = [dataset.staging_dir 
                                    for dataset in db_project.datasets
                                    if dataset.dataset_id in self._datasets_to_remove]
-        current_members = set(get_member_ids(project_d))
+        current_members = set(_get_member_ids(project_d['members']))
         stale_members = set(db_project.member_ids)
         if current_members - stale_members:
             self.members_to_add = list(current_members - stale_members)
         if stale_members - current_members:
             self.members_to_remove = list(stale_members - current_members)
 
+    def __init__(self, **kwargs):
+        self.old_dir_name = None
+        self.new_datasets = None
+        self.dirs_to_remove = None
+        self.new_members = None
+        self.members_to_remove = None
+        if 'name' in kwargs: # use instance to handle a project update
+            super().__init__(**kwargs)
+            self._set_updates(**kwargs)
+            self.effects = _get_effects(self.new_datasets)
+        else: # use instance to handle stolen datasets
+            super().__init__(id=kwargs['id'])
+
     def save(self):
-        if hasattr(self, 'old_dir_name'):
+        if self.old_dir_name:
             (ProjectModel.update(name=self.name)
                         .where(ProjectModel.id == self.id)
                         .execute())
-        if hasattr(self, 'datasets'):
-            for dataset in self.datasets:
-                (ProjectDataset.insert(project_id=self.id, 
-                                      dataset_id=dataset.id,
-                                      staging_dir=dataset.dir_path)
-                               .execute())
-        if hasattr(self, '_datasets_to_remove'):
+        if self.new_datasets:
+            for dataset in self.new_datasets:
+                if type(dataset) is Dataset or \
+                   type(dataset) is Parent:
+                    (ProjectDataset.insert(project_id=self.id, 
+                                        dataset_id=dataset.id,
+                                        staging_dir=dataset.dir_path)
+                                    .execute())
+        if self._datasets_to_remove:
             (ProjectDataset.delete()
                             .where(ProjectDataset.project_id == self.id,
                                    ProjectDataset.dataset_id.in_(self._datasets_to_remove))
                             .execute())
-        if hasattr(self, 'members_to_add'):
-            for member in self.members_to_add:
+        if self.new_members:
+            for member in self.new_members:
                 ProjectMember.insert(project_id=self.id, member_id=member).execute()
-        if hasattr(self, 'members_to_remove'):
+        if self.members_to_remove:
             (ProjectMember.delete()
                            .where(ProjectMember.project_id == self.id,
                                   ProjectMember.member_id.in_(self.members_to_remove))
@@ -123,18 +160,11 @@ class NewProject(Project):
         '''
         Initialize a NewProject instance using project data from SMRT Link.
         '''
-        super().__init__(project_d)
-        self._other_datasets = []
-        for ds_dct in project_d['datasets']:
-            dataset = create_dataset(ds_dct)
-            if dataset:
-                self._other_datasets.append(dataset)
-        self._child_datasets = []
-        for ds in self._other_datasets:
-            if type(ds) is Parent:
-                self._child_datasets.extend(ds.child_datasets)
-        self.datasets = self._other_datasets + self._child_datasets
-        self.members = get_member_ids(project_d)
+        super().__init__(**project_d)
+        assert 'datasets' in project_d and 'members' in project_d
+        self.datasets = _dicts_to_datasets(project_d['datasets'])
+        self.members = _get_member_ids(project_d['members'])
+        self.effects = _get_effects(self.datasets)
 
     def save(self):
         '''
@@ -147,11 +177,12 @@ class NewProject(Project):
         '''
         (ProjectModel.insert(id=int(self.id), name=self.name)
                     .execute())
-        # do not insert child datasets into the database
         dataset_rows = [{'project_id': self.id, 
                          'dataset_id': ds.id,
                          'staging_dir': ds.dir_path}
-                         for ds in self._other_datasets]
+                         for ds in self.datasets
+                         if type(ds) is Dataset or \
+                            type(ds) is Parent]
         ProjectDataset.insert_many(dataset_rows).execute()
         member_rows = [{'project_id': self.id,
                         'member_id': member} 
