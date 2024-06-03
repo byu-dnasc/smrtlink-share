@@ -7,6 +7,7 @@ except Exception as e:
     raise ImportError(f"Failed to initialize database: {e}")
 
 class AppModel(pw.Model):
+    '''Subclass of `peewee.Model` that sets the database to the global `db` variable.'''
     class Meta:
         database = db
 
@@ -21,10 +22,14 @@ class ProjectModel(AppModel):
         assert hasattr(self, '_members'), 'ProjectMember foreign key backref not found'
         self.member_ids = [str(record.member_id) for record in self._members]
     
-class ProjectDataset(AppModel):
+class ProjectDataset(pw.Model):
     project_id = pw.ForeignKeyField(ProjectModel, backref='datasets')
     dataset_id = pw.CharField(max_length=50)
     staging_dir = pw.CharField()
+
+    class Meta:
+        database = db
+        primary_key = pw.CompositeKey('project_id', 'dataset_id')
 
 class ProjectMember(AppModel):
     project_id = pw.ForeignKeyField(ProjectModel, backref='_members')
