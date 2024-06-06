@@ -1,8 +1,9 @@
-from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-from time import sleep
-from app import logger
-import app.handling as handling
+import http.server
+import time
 import re
+
+import app.handling
+import app
 
 def _get_project_id(uri):
     '''Try to get project ID from URI, return None if not found'''
@@ -12,7 +13,7 @@ def _get_project_id(uri):
     else:
         return None
    
-class RequestHandler(BaseHTTPRequestHandler):
+class RequestHandler(http.server.BaseHTTPRequestHandler):
     '''
     Respond to and log requests, then handle them asynchronously
     '''
@@ -23,21 +24,21 @@ class RequestHandler(BaseHTTPRequestHandler):
         if response_code == 200:
             if self.command == 'POST':
                 if self.path == '/smrt-link/projects':
-                    logger.info(f'Received notification that a new project was created in SMRT Link')
+                    app.logger.info(f'Received notification that a new project was created in SMRT Link')
                 elif self.path == '/smrt-link/job-manager/jobs/analysis':
-                    logger.info(f'Received notification that a new analysis job was created in SMRT Link')
+                    app.logger.info(f'Received notification that a new analysis job was created in SMRT Link')
                 else:
-                    logger.info(f'Received request: {self.command} {self.path}')
+                    app.logger.info(f'Received request: {self.command} {self.path}')
             elif self.command == 'PUT':
-                logger.info(f'Received notification that project {self.project_id} was modified in SMRT Link')
+                app.logger.info(f'Received notification that project {self.project_id} was modified in SMRT Link')
             elif self.command == 'DELETE':
-                logger.info(f'Received notification that project {self.project_id} was deleted in SMRT Link')
+                app.logger.info(f'Received notification that project {self.project_id} was deleted in SMRT Link')
             else:
-                logger.info(f'Received request: {self.command} {self.path}')
+                app.logger.info(f'Received request: {self.command} {self.path}')
         elif response_code == 405:
-            logger.info(f'Received request concerning project 1, which is not supported.')
+            app.logger.info(f'Received request concerning project 1, which is not supported.')
         else:
-            logger.info(f'Received invalid request: {self.command} {self.path}')
+            app.logger.info(f'Received invalid request: {self.command} {self.path}')
     
     def do_GET(self):
         self.send_response(200)
@@ -86,26 +87,26 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_PUT(self):
         if not self.handle_response():
             return
-        sleep(1)
-        handling.update_project(self.project_id)        
+        time.sleep(1)
+        app.handling.update_project(self.project_id)        
     
     def do_POST(self):
         if not self.handle_response():
             return
-        sleep(1)
+        time.sleep(1)
         if self.path == '/smrt-link/projects':
-            handling.new_project()
+            app.handling.new_project()
         elif self.path == '/smrt-link/job-manager/jobs/analysis':
-            handling.update_analyses()
+            app.handling.update_analyses()
         else:
-            logger.error(f'Unexpected POST request: {self.path}')
+            app.logger.error(f'Unexpected POST request: {self.path}')
         
     def do_DELETE(self):
         if not self.handle_response():
             return
-        handling.delete_project(self.project_id)
+        app.handling.delete_project(self.project_id)
 
-class App(ThreadingHTTPServer):
+class App(http.server.ThreadingHTTPServer):
 
     def __init__(self, server_address):
         super().__init__(server_address, RequestHandler)

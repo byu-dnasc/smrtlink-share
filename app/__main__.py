@@ -1,14 +1,10 @@
-import logging
-import os
 import grp
 import pwd
-import peewee as pw
+import os
 
-from app.project import Project, ProjectDataset, ProjectMember
 from app import STAGING_ROOT, APP_USER, GROUP_NAME, APP_PORT
 import app.smrtlink as smrtlink
 import app.globus as globus
-import app.staging as staging
 
 # check that all modules have initialized properly
 if smrtlink.CLIENT is None:
@@ -27,25 +23,6 @@ dir_owner = pwd.getpwuid(os.stat(STAGING_ROOT).st_uid).pw_name
 if dir_owner != APP_USER:
     print(f"Staging root directory '{STAGING_ROOT}' is not owned by '{APP_USER}'")
     exit(1)
-
-# initialize and bind database to models
-try:
-    db = pw.SqliteDatabase(os.environ['DB_PATH'])
-except Exception as e:
-    print(f"Failed to initialize database: {e}")
-    exit(1)
-Project.bind(db)
-ProjectDataset.bind(db)
-ProjectMember.bind(db)
-staging.DatasetDirectory.bind(db)
-globus.AccessRuleId.bind(db)
-db.create_tables([
-    Project, 
-    ProjectDataset, 
-    ProjectMember, 
-    globus.AccessRuleId, 
-    staging.DatasetDirectory],
-    safe=True)
 
 # check that the app is running as the correct group
 try:

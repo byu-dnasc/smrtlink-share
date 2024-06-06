@@ -1,9 +1,7 @@
-from requests import HTTPError
-from app.project import Project, NewProject, UpdatedProject
-from app.smrtlink_client import SmrtLinkClient
-from app import OutOfSyncError, SMRTLINK_HOST, SMRTLINK_PORT, SMRTLINK_USER, SMRTLINK_PASS
+import app.smrtlink_client
+import app
 
-class DnascSmrtLinkClient(SmrtLinkClient):
+class DnascSmrtLinkClient(app.smrtlink_client.SmrtLinkClient):
 
     def get_project_dict(self, id):
         '''
@@ -29,11 +27,11 @@ def _get_smrtlink_client():
     """
     try:
         return DnascSmrtLinkClient(
-            host=SMRTLINK_HOST,
-            port=SMRTLINK_PORT,
-            username=SMRTLINK_USER,
-            password=SMRTLINK_PASS,
-            verify=False # Disable SSL verification (optional, default is True, i.e. SSL verification is enabled)
+            host=app.SMRTLINK_HOST,
+            port=app.SMRTLINK_PORT,
+            username=app.SMRTLINK_USER,
+            password=app.SMRTLINK_PASS,
+            verify=False # Disable SSL verification
         )
     except Exception as e:
         return None
@@ -49,10 +47,6 @@ def get_jobs_created_after(time):
     '''
     return CLIENT.get_analysis_jobs(createdAt='gt:' + time,
                                     projectId='not:1')
-
-def get_project_analyses(id):
-    '''Get datasets for a project by id from SMRT Link.'''
-    return CLIENT.get_analysis_jobs(projectId=id)
 
 def get_job_datasets(id):
     '''Get datasets for a job by id from SMRT Link.'''
@@ -70,43 +64,8 @@ def get_job_files(id):
     '''Get files for a job by id from SMRT Link.'''
     return CLIENT.get_job_datastore(id)
 
-def get_project(id):
-    '''
-    Get a project from SMRT Link by id by calling get_project_dict method.
-    '''
-    project_dict = CLIENT.get_project_dict(id)
-    if project_dict:
-        project = Project(**project_dict)
-        if type(project) is NewProject:
-            raise OutOfSyncError(project)
-        return project
-    return None
-
-def get_new_project():
-    '''
-    Get the most recent project from SMRT Link, or None if there are no projects.
-
-    Raises error if there is a problem with the connection to SMRT Link,
-    or OutOfSyncError if the most recent project in SMRT Link turns 
-    out to not be new to the app.
-    '''
-    sl_ids = CLIENT.get_project_ids()
-    project_d = CLIENT.get_project_dict(sl_ids[-1])
-    if project_d:
-        project = Project(**project_d)
-        if type(project) is UpdatedProject:
-            raise OutOfSyncError(project)
-        return project
-    return None
-
-def load_db():
-    '''Load the database with projects from SMRT Link.'''
-    # clear the database
-    Project.delete.execute()
-    # repopulate the database
-    projects = []
-    for id in CLIENT.get_project_ids():
-        project_dict = CLIENT.get_project_dict(id)
-        projects.append(Project(**project_dict))
-    Project.bulk_create(projects)
-    return projects
+def get_project_data(id):
+    if id is None:
+        sl_ids = CLIENT.get_project_ids()
+        return CLIENT.get_project_dict(sl_ids[-1])
+    return CLIENT.get_project_dict(id)

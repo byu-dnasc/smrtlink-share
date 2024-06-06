@@ -1,48 +1,39 @@
-import peewee as pw
-from app import DB_PATH
+import peewee
+import app
 
 try:
-    db = pw.SqliteDatabase(DB_PATH)
+    db = peewee.SqliteDatabase(app.DB_PATH)
 except Exception as e:
     raise ImportError(f"Failed to initialize database: {e}")
 
-class AppModel(pw.Model):
+class AppState(peewee.Model):
     '''Subclass of `peewee.Model` that sets the database to the global `db` variable.'''
     class Meta:
         database = db
 
-class ProjectModel(AppModel):
+class Dataset(AppState):
+    id = peewee.CharField(primary_key=True, 
+                      max_length=36)
+    project_id = peewee.IntegerField()
+    dir_path = peewee.CharField()
 
-    id = pw.IntegerField(primary_key=True)
-    name = pw.CharField()
+class ProjectMember(AppState):
+    project_id = peewee.IntegerField()
+    member_id = peewee.CharField()
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        assert hasattr(self, 'datasets'), 'ProjectDataset foreign key backref not found'
-        assert hasattr(self, '_members'), 'ProjectMember foreign key backref not found'
-        self.member_ids = [str(record.member_id) for record in self._members]
-    
-class ProjectDataset(pw.Model):
-    project_id = pw.ForeignKeyField(ProjectModel, backref='datasets')
-    dataset_id = pw.CharField(max_length=50)
-    staging_dir = pw.CharField()
+class Permission(AppState):
+    id = peewee.CharField(primary_key=True)
+    member_id = peewee.CharField()
+    dataset_id = peewee.CharField()
 
-    class Meta:
-        database = db
-        primary_key = pw.CompositeKey('project_id', 'dataset_id')
+class Job(AppState):
+    id = peewee.IntegerField(primary_key=True)
 
-class ProjectMember(AppModel):
-    project_id = pw.ForeignKeyField(ProjectModel, backref='_members')
-    member_id = pw.CharField()
-
-class JobId(AppModel):
-    _ = pw.IntegerField(primary_key=True)
-
-class LastJobUpdate(AppModel):
+class LastJobUpdate(AppState):
     '''
     A class defining a table with a single row which stores a timestamp.
     '''
-    timestamp = pw.DateTimeField()
+    timestamp = peewee.DateTimeField()
 
     @staticmethod
     def set(time):
@@ -62,9 +53,8 @@ class LastJobUpdate(AppModel):
         '''
         return LastJobUpdate.get_by_id(1).timestamp
 
-db.create_tables([ProjectModel,
-                    ProjectDataset, 
-                    ProjectMember,
-                    LastJobUpdate], 
-                    safe=True)
+db.create_tables([Dataset, 
+                  ProjectMember,
+                  LastJobUpdate], 
+                  safe=True)
 LastJobUpdate.create(timestamp='2000-01-01T00:00:00.000Z')

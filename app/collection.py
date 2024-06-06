@@ -1,106 +1,7 @@
 import abc
-from os.path import join
-from pbcore.io.dataset.DataSetIO import DataSet as DatasetXml
-from pbcore.io.dataset.DataSetMembers import ExternalResource, ExternalResources
-from app import logger
-from app.state import ProjectDataset
+import os
 
-def _get_file_path(res, file_paths):
-    '''
-    Get the file path of a resource and recurse if it has 
-    ExternalResources
-    '''
-    if hasattr(res, 'resourceId'):
-        file_paths.append(res.resourceId)
-    if type(res) is ExternalResource: # else is FileIndex
-        if len(res.indices) > 0:
-            _get_file_paths(res.indices, file_paths)
-        if len(res.externalResources) > 0:
-            _get_file_paths(res.externalResources, file_paths)
-    return file_paths
-
-def _get_file_paths(resources: ExternalResources, file_paths):
-    '''Recursively get all file paths from a list of resources'''
-    for res in resources:
-        _get_file_path(res, file_paths)
-    return file_paths
-
-def _resources_to_file_paths(resources: ExternalResources):
-    '''
-    Get all file paths from DataSet.externalResources or DataSet.supplementalResources,
-    regardless of the number of nodes in the underlying XML tree by using recursion.
-    XML Schema definitions found at https://github.com/PacificBiosciences/PacBioFileFormats 
-    - ExternalResources, SupplementalResources is found in PacBioBaseDataModel.xsd
-    - DataSet and derivative types are found in PacBioDatasets.xsd
-    '''
-    return _get_file_paths(resources, [])
-
-def _get_dataset_files(xml_file) -> list[str]:
-    '''Returns all files associated with a dataset XML file.'''
-    ds = DatasetXml(xml_file)
-    primary_files = _resources_to_file_paths(ds.externalResources)
-    try: # TODO: how to handle split datasets?
-        assert len(primary_files) == 1, f'Expected one resource file for dataset, found {len(primary_files)}'
-    except AssertionError:
-        pass
-    supplemental_files = _resources_to_file_paths(ds.supplementalResources)
-    return primary_files + supplemental_files
-
-def _get_xml(xml_res: ExternalResource):
-    # one of the resource's externalResources is the sample XML
-    xml_files = [res.resourceId for res in xml_res.externalResources if res.resourceId.endswith('.xml')]
-    assert xml_files, 'No XML file found in externalResource'
-    return xml_files[0]
-
-def _get_child_dataset_dicts(parent_xml):
-    '''Return a list (generator) of dictionaries of dataset data'''
-    for res in parent_xml.externalResources:
-        subdataset_xml_file = _get_xml(res)
-        child_xml = DatasetXml(subdataset_xml_file)
-        yield {
-            'name': child_xml.name,
-            'uuid': child_xml.uuid,
-            'path': subdataset_xml_file,
-        }
-
-def get_movie_id(xml: DatasetXml) -> str | None:
-    return (xml.metadata['Collections']
-                        ['CollectionMetadata']
-                        .record['attrib']
-                        ['Context'])
-
-def get_sample_name(xml: DatasetXml) -> str | None:
-    '''Get the sample name from a dataset XML file
-    '''
-    return (xml.metadata['Collections']
-                        ['CollectionMetadata']
-                        ['WellSample']
-                        ['BioSamples'][0]
-                        .record['attrib']
-                        ['Name']
-                        )
-
-def get_well_sample_name(xml: DatasetXml) -> str | None:
-    '''This is the name given to represent all DNA that was loaded
-    in a cell. This name should only be used for parent datasets.
-    '''
-    return (xml.metadata['Collections']
-                        ['CollectionMetadata']
-                        ['WellSample']
-                        .record['attrib']
-                        ['Name'])
-
-def get_barcode(xml: DatasetXml) -> str | None:
-    try:
-        return (xml.metadata['Collections']
-                            ['CollectionMetadata']
-                            ['WellSample']
-                            ['BioSamples'][0]
-                            ['DNABarcodes'][0]
-                            .record['attrib']
-                            ['Name'])
-    except Exception as e:
-        return None
+import app.xml
 
 class FileCollection(abc.ABC):
     @property
@@ -129,36 +30,23 @@ class FileCollection(abc.ABC):
     @property
     def dir_path(self) -> str: # this method is meant to be inherited by all subclasses
         '''Return the path to the directory where this dataset should be staged.'''
-        return join(self._prefix, self._dir_name)
+        return os.path.join(self._prefix, self._dir_name)
 
 class PendingAnalysis:
-    def __init__(self, dataset_id: str, job: dict, files: list):
-        self.dataset_id = dataset_id
-        self.id = job['id']
-        self.files = files
+    def __init__(self, parent_dir: str, job: dict):
+        self.parent_dir = parent_dir
+        self.job = job
     
-    def complete(self, job):
+    def complete(self, files):
         '''Return a CompletedAnalysis object for this analysis.'''
-        return CompletedAnalysis(self.dataset_id, job, self.files)
+        return CompletedAnalysis(self.parent_dir, files)
     
-def _get_dataset_dir(id):
-    dataset_model = ProjectDataset.get_or_none(ProjectDataset.dataset_id == id)
-    if dataset_model:
-        return dataset_model.staging_dir
-    return None
-
 class CompletedAnalysis(FileCollection):
-    def __init__(self, dataset_id, job, files):
-        '''
-        raises ValueError if no dataset is found in the database with the given ID.
-        '''
-        self.parent_dir = _get_dataset_dir(dataset_id)
-        if self.parent_dir is None:
-            raise ValueError(f'No dataset found with ID {dataset_id}')
+    def __init__(self, parent_dir: str, job: dict, files: list):
+        self.parent_dir = parent_dir
         self.name = job['name']
-        self._files = files
         self.id = job['id']
-        self.project_id = job['project_id']
+        self._files = files
     
     @property
     def _prefix(self):
@@ -168,6 +56,23 @@ class CompletedAnalysis(FileCollection):
     def _dir_name(self):
         return f'Analysis {self.id}: {self.name}'
     
+    @property
+    def files(self):
+        return self._files
+
+class SupplementalResources(FileCollection):
+    def __init__(self, parent_dir, files):
+        self.parent_dir = parent_dir
+        self._files = files
+    
+    @property
+    def _prefix(self):
+        return self.parent_dir
+    
+    @property
+    def _dir_name(self):
+        return 'Supplemental Run Data'
+
     @property
     def files(self):
         return self._files
@@ -184,11 +89,11 @@ class Dataset(FileCollection):
 
     def __init__(self, **kwargs):
         self.id = kwargs['uuid']
-        self.xml = DatasetXml(kwargs['path'])
+        self.xml = app.xml.DatasetXml(kwargs['path'])
         self.name = kwargs['name']
         if 'parentUuid' in kwargs:
-            self.name = get_sample_name(self.xml)
-        self.movie_id = get_movie_id(self.xml)
+            self.name = app.xml.get_sample_name(self.xml)
+        self.movie_id = app.xml.get_movie_id(self.xml)
     
     @property
     def _prefix(self):
@@ -200,7 +105,7 @@ class Dataset(FileCollection):
     
     @property
     def files(self):
-        return _resources_to_file_paths(self.xml.externalResources)
+        return app.xml.resources_to_file_paths(self.xml.externalResources)
 
     def __str__(self):
         return str(self.name)
@@ -213,18 +118,18 @@ class Parent(Dataset):
     '''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.name = get_well_sample_name(self.xml)
+        self.name = app.xml.get_well_sample_name(self.xml)
         self.num_children = kwargs['numChildren']
-        child_dataset_dicts = _get_child_dataset_dicts(self.xml)
+        child_dataset_dicts = app.xml.get_child_dataset_dicts(self.xml)
         self.child_datasets = []
         for child_dict in child_dataset_dicts:
             try:
                 dataset = Child(self._dir_name, **child_dict) 
             except Exception as e:
-                logger.error(f"Cannot handle SMRT Link dataset {child_dict['id']}: {e}.")
+                app.logger.error(f"Cannot handle SMRT Link dataset {child_dict['id']}: {e}.")
                 continue
             self.child_datasets.append(dataset)
-        self.child_datasets.append(SupplementalResources(self._dir_name, self.files))
+        self.child_datasets.append(app.collection.SupplementalResources(self._dir_name, self.files))
 
     @property
     def _prefix(self):
@@ -248,8 +153,8 @@ class Child(Dataset):
     '''
     def __init__(self, parent_dir, **kwargs):
         super().__init__(**kwargs)
-        self.barcode = get_barcode(self.xml)
-        self.name = get_sample_name(self.xml) # replace DataSet name with BioSample name
+        self.barcode = app.xml.get_barcode(self.xml)
+        self.name = app.xml.get_sample_name(self.xml) # replace DataSet name with BioSample name
         self.parent_dir = parent_dir
     
     @property
@@ -259,20 +164,3 @@ class Child(Dataset):
     @property
     def _dir_name(self):
         return f'{self.name} ({self.barcode})'
-
-class SupplementalResources(FileCollection):
-    def __init__(self, parent_dir, files):
-        self.parent_dir = parent_dir
-        self._files = files
-    
-    @property
-    def _prefix(self):
-        return self.parent_dir
-    
-    @property
-    def _dir_name(self):
-        return 'Supplemental Run Data'
-
-    @property
-    def files(self):
-        return self._files
