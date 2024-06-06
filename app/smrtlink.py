@@ -64,8 +64,13 @@ def get_job_files(id):
     '''Get files for a job by id from SMRT Link.'''
     return CLIENT.get_job_datastore(id)
 
-def get_project_data(id):
-    if id is None:
-        sl_ids = CLIENT.get_project_ids()
-        return CLIENT.get_project_dict(sl_ids[-1])
-    return CLIENT.get_project_dict(id)
+def get_project(id):
+    '''Raises Exception'''
+    project_d = CLIENT.get_project_dict(id)
+    return project_d['datasets'], project_d['members']
+
+def get_new_project():
+    '''Raises Exception'''
+    sl_ids = CLIENT.get_project_ids()
+    project_d = CLIENT.get_project_dict(sl_ids[-1])
+    return project_d['id'], project_d['datasets'], project_d['members']

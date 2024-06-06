@@ -2,7 +2,7 @@ import http.server
 import time
 import re
 
-import app.handling
+import app.handle
 import app
 
 def _get_project_id(uri):
@@ -88,23 +88,23 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         if not self.handle_response():
             return
         time.sleep(1)
-        app.handling.update_project(self.project_id)        
+        app.handle.updated_project(self.project_id)        
     
     def do_POST(self):
         if not self.handle_response():
             return
         time.sleep(1)
         if self.path == '/smrt-link/projects':
-            app.handling.new_project()
+            app.handle.new_project()
         elif self.path == '/smrt-link/job-manager/jobs/analysis':
-            app.handling.update_analyses()
+            app.handle.new_analyses()
         else:
             app.logger.error(f'Unexpected POST request: {self.path}')
         
     def do_DELETE(self):
         if not self.handle_response():
             return
-        app.handling.delete_project(self.project_id)
+        app.handle.deleted_project(self.project_id)
 
 class App(http.server.ThreadingHTTPServer):
 

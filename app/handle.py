@@ -31,15 +31,6 @@ def _handle_removed_datasets(project_id, dataset_data):
         app.filesystem.remove(dataset)
         app.globus.remove_permissions(dataset.id)
 
-def _get_removed_members(project_id, members) -> list[app.state.ProjectMember]:
-    current_ids = [m.member_id for m in members]
-    return (app.state.ProjectMember
-                    .select()
-                    .where(app.state.ProjectMember.project_id == project_id,
-                            app.state.ProjectMember.member_id
-                                                    .not_in(current_ids))
-                    .execute())
-
 def _handle_dataset_analyses(dataset: app.collection.Dataset):
     try:
         completed, pending = app.job.get_analyses(dataset)
@@ -87,7 +78,7 @@ def _handle_datasets(project_id, dataset_data, member_ids, new_member_ids):
             dataset = _handle_new_dataset(project_id, dataset_d, member_ids)
             if dataset:
                 _handle_dataset_analyses(dataset)
-                if type(dataset) is app.datasets.Parent:
+                if type(dataset) is app.collection.Parent:
                     for child in dataset.child_datasets:
                         app.filesystem.stage(child)
         else: # dataset is app.state.Dataset
@@ -97,6 +88,15 @@ def _handle_datasets(project_id, dataset_data, member_ids, new_member_ids):
                     app.state.Job.insert(id=analysis.id).execute()
         datasets.append(dataset)        
     return datasets
+
+def _get_removed_members(project_id, members) -> list[app.state.ProjectMember]:
+    current_ids = [m.member_id for m in members]
+    return (app.state.ProjectMember
+                    .select()
+                    .where(app.state.ProjectMember.project_id == project_id,
+                            app.state.ProjectMember.member_id
+                                                    .not_in(current_ids))
+                    .execute())
 
 def _handle_removed_members(project_id, member_ids, datasets):
     removed_members = _get_removed_members(project_id, member_ids)
@@ -115,23 +115,38 @@ def _handle_new_members(project_id, member_ids):
             app.state.ProjectMember.insert(project_id=project_id, member_id=member_id).execute()
     return new_members
 
-def project_update(project_id=None):
-    project_dataset_data, member_ids = app.smrtlink.get_project_data(project_id)
-    if project_id is None:
-        project_id = ...
+def _handle_project(project_id, project_dataset_data, member_ids):
     new_member_ids = _handle_new_members(project_id, member_ids)
     datasets = _handle_datasets(project_id, project_dataset_data, member_ids, new_member_ids)
     _handle_removed_members(project_id, member_ids, datasets)
     _handle_removed_datasets(project_dataset_data)
-    
-def delete_project(project_id):
-    datasets = app.state.Dataset.select().where(app.state.Dataset.project_id == project_id).execute()
+
+def updated_project(project_id):
+    try:
+        data = app.smrtlink.get_project(project_id)
+        _handle_project(project_id, *data)
+    except Exception as e:
+        app.logger.error(f'Failed to handle update to project {project_id}: {e}')
+        return
+
+def new_project():
+    try:
+        data = app.smrtlink.get_new_project()
+        _handle_project(*data)
+    except Exception as e:
+        app.logger.error(f'Failed to handle new project: {e}')
+        return
+
+def deleted_project(project_id):
+    datasets = (app.state.Dataset.select()
+                                .where(app.state.Dataset.project_id == project_id)
+                                .execute())
     for dataset in datasets:
         app.filesystem.remove(dataset)
         app.globus.remove_permissions(dataset.id)
         dataset.delete_instance()
 
-def update_analyses():
+def new_analyses():
     try:
         pending_analyses, completed_analyses = app.job.get_new_analyses()
     except Exception as e:
