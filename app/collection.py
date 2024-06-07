@@ -34,27 +34,27 @@ class FileCollection(abc.ABC):
 
 class PendingAnalysis:
     def __init__(self, parent_dir: str, job: dict):
-        self.parent_dir = parent_dir
-        self.job = job
+        self._parent_dir = parent_dir
+        self._job = job
     
     def complete(self, files):
         '''Return a CompletedAnalysis object for this analysis.'''
-        return CompletedAnalysis(self.parent_dir, files)
+        return CompletedAnalysis(self._parent_dir, self._job, files)
     
 class CompletedAnalysis(FileCollection):
     def __init__(self, parent_dir: str, job: dict, files: list):
-        self.parent_dir = parent_dir
-        self.name = job['name']
-        self.id = job['id']
+        self._parent_dir = parent_dir
+        self._name = job['name']
+        self._id = job['id']
         self._files = files
     
     @property
     def _prefix(self):
-        return self.parent_dir
+        return self._parent_dir
    
     @property
     def _dir_name(self):
-        return f'Analysis {self.id}: {self.name}'
+        return f'Analysis {self._id}: {self._name}'
     
     @property
     def files(self):
@@ -62,12 +62,12 @@ class CompletedAnalysis(FileCollection):
 
 class SupplementalResources(FileCollection):
     def __init__(self, parent_dir, files):
-        self.parent_dir = parent_dir
+        self._parent_dir = parent_dir
         self._files = files
     
     @property
     def _prefix(self):
-        return self.parent_dir
+        return self._parent_dir
     
     @property
     def _dir_name(self):
@@ -77,7 +77,7 @@ class SupplementalResources(FileCollection):
     def files(self):
         return self._files
 
-class Dataset(FileCollection):
+class Dataset(FileCollection, app.BaseDataset):
 
     def __new__(cls, *args, **kwargs):
         '''Instantiate a Dataset or Parent, depending on the number of children.
@@ -88,12 +88,16 @@ class Dataset(FileCollection):
             return super(Dataset, cls).__new__(cls)
 
     def __init__(self, **kwargs):
-        self.id = kwargs['uuid']
-        self.xml = app.xml.DatasetXml(kwargs['path'])
-        self.name = kwargs['name']
+        self._id = kwargs['uuid']
+        self._xml = app.xml.DatasetXml(kwargs['path'])
+        self._name = kwargs['name']
         if 'parentUuid' in kwargs:
-            self.name = app.xml.get_sample_name(self.xml)
-        self.movie_id = app.xml.get_movie_id(self.xml)
+            self._name = app.xml.get_sample_name(self._xml)
+        self._movie_id = app.xml.get_movie_id(self._xml)
+    
+    @property
+    def uuid(self):
+        return self._id
     
     @property
     def _prefix(self):
@@ -101,14 +105,14 @@ class Dataset(FileCollection):
 
     @property
     def _dir_name(self):
-        return f'Movie {self.movie_id} - {self.name}'
+        return f'Movie {self._movie_id} - {self._name}'
     
     @property
     def files(self):
-        return app.xml.resources_to_file_paths(self.xml.externalResources)
+        return app.xml.resources_to_file_paths(self._xml.externalResources)
 
     def __str__(self):
-        return str(self.name)
+        return str(self._name)
 
 class Parent(Dataset):
     '''
@@ -118,8 +122,8 @@ class Parent(Dataset):
     '''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.name = app.xml.get_well_sample_name(self.xml)
-        self.num_children = kwargs['numChildren']
+        self._name = app.xml.get_well_sample_name(self.xml)
+        self._num_children = kwargs['numChildren']
         child_dataset_dicts = app.xml.get_child_dataset_dicts(self.xml)
         self.child_datasets = []
         for child_dict in child_dataset_dicts:
@@ -137,7 +141,7 @@ class Parent(Dataset):
     
     @property
     def _dir_name(self):
-        return f'{super()._dir_name} ({self.num_children} barcoded samples)'
+        return f'{super()._dir_name} ({self._num_children} barcoded samples)'
     
     @property
     def files(self):
@@ -153,14 +157,14 @@ class Child(Dataset):
     '''
     def __init__(self, parent_dir, **kwargs):
         super().__init__(**kwargs)
-        self.barcode = app.xml.get_barcode(self.xml)
-        self.name = app.xml.get_sample_name(self.xml) # replace DataSet name with BioSample name
-        self.parent_dir = parent_dir
+        self._barcode = app.xml.get_barcode(self.xml)
+        self._name = app.xml.get_sample_name(self.xml) # replace DataSet name with BioSample name
+        self._parent_dir = parent_dir
     
     @property
     def _prefix(self):
-        return self.parent_dir
+        return self._parent_dir
 
     @property
     def _dir_name(self):
-        return f'{self.name} ({self.barcode})'
+        return f'{self._name} ({self._barcode})'
