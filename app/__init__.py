@@ -1,4 +1,5 @@
 import os
+import abc
 import logging
 import dotenv
 
@@ -24,10 +25,6 @@ except KeyError as e:
 
 APP_PORT = 9093
 
-class OutOfSyncError(Exception):
-    def __init__(self, project) -> None:
-        self.project = project
-
 logger = logging.getLogger('smrtlink-share')
 logger.setLevel(logging.INFO)
 log_formatter = logging.Formatter(
@@ -37,3 +34,15 @@ handler = logging.FileHandler('smrtlink-share.log')
 handler.setFormatter(log_formatter)
 handler.setLevel(logging.INFO)
 logger.addHandler(handler)
+
+class BaseDataset(abc.ABC):
+
+    @abc.abstractmethod
+    @property
+    def dir_path(self):
+        pass
+
+    @abc.abstractmethod
+    @property
+    def uuid(self):
+        pass
