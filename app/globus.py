@@ -23,22 +23,19 @@ def _get_transfer_client():
 
 TRANSFER_CLIENT = _get_transfer_client()
 
-def _add_permission(user_id, path) -> str:
+def _create_permission(member_id, dataset) -> app.state.Permission:
+    '''Raises Globus exception.'''
     rule_data = {
         "DATA_TYPE": "access",
         "principal_type": "identity",
-        "principal": user_id,
-        "path": path,
+        "principal": member_id,
+        "path": dataset.dir_path,
         "permissions": "r",
     }
-    try:
-        return TRANSFER_CLIENT.add_endpoint_acl_rule(app.GLOBUS_COLLECTION_ID, rule_data)
-    except globus_sdk.TransferAPIError as e:
-        ... # TODO Log the error
-        return None
-
-def _get_access_rules():
-    return TRANSFER_CLIENT.endpoint_acl_list(app.GLOBUS_COLLECTION_ID)
+    permission_id = TRANSFER_CLIENT.add_endpoint_acl_rule(app.GLOBUS_COLLECTION_ID, rule_data)
+    return app.state.Permission(id=permission_id,
+                                dataset_id=dataset.id,
+                                member_id=member_id)
 
 def _delete_permission(access_rule_id):
     try:
@@ -46,22 +43,27 @@ def _delete_permission(access_rule_id):
     except globus_sdk.TransferAPIError:
         ... # TODO Log the error
 
-def remove_permissions(dataset_id):
-    permissions = (app.state.Permission.select()
-                                        .where(app.state.Permission.dataset_id == dataset_id)
-                                        .execute())
+def remove_permissions(dataset):
+    permissions = app.state.Permission.get_multiple(dataset.id)
     for permission in permissions:
-        _delete_permission(permission.id)
-        permission.delete_instance()
+        remove_permission(dataset, permission.member_id)
 
-def remove_permission(dataset_id, member_id):
-    permission = (app.state.Permission.get(app.state.Permission.dataset_id == dataset_id,
-                                           app.state.Permission.member_id == member_id))
-    _delete_permission(permission.id)
+def remove_permission(dataset, member_id):
+    permission = app.state.Permission.get_by(member_id, dataset.id)
+    if permission is None:
+        app.logger.info(f'Permission for {member_id} to access {dataset.dir_name} not found.')
+        return
+    try:
+        _delete_permission(permission.id)
+    except globus_sdk.GlobusError as e:
+        app.logger.error(f'Failed to remove permission for {member_id} to access {dataset.dir_name}: {e}')
+        return
     permission.delete_instance()
 
 def create_permission(dataset, member_id):
-    permission_id = _add_permission(member_id, dataset.dir_path)
-    app.state.Permission.insert(id=permission_id,
-                                member_id=member_id,
-                                dataset_id=dataset.id).execute()
+    try:
+        permission = _create_permission(member_id, dataset)
+    except globus_sdk.GlobusError as e:
+        app.logger.error(f'Failed to create Globus permission for {member_id} to access {dataset.dir_path}: {e}')
+        return
+    permission.save(force_insert=True)
