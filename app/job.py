@@ -24,20 +24,6 @@ def get_analyses(dataset):
             pending.append(app.collection.PendingAnalysis(dataset.dir_path, job))
     return completed, pending
 
-def get_new_completed_analyses(dataset: app.datasets.Dataset) -> list[app.collection.CompletedAnalysis]:
-    '''Use Job table to identify new jobs and return a
-    CompletedAnalysis for each successful new job.
-    '''
-    jobs = app.smrtlink.get_dataset_jobs(dataset.id)
-    staged_ids = app.state.Job.select(app.state.Job.id).execute()
-    new_jobs = [j for j in jobs if j['id'] not in staged_ids]
-    analyses = []
-    for job in new_jobs:
-        if job['state'] is SUCCESSFUL:
-            files = app.smrtlink.get_job_files(job['id'])
-            analyses.append(app.collection.CompletedAnalysis(dataset.dir_path, job, files))
-    return analyses
-
 def _get_analyses(jobs):
     '''Returns a tuple of completed and pending analyses
     '''
