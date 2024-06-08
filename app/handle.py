@@ -57,7 +57,7 @@ def _handle_new_dataset(project_id, dataset_d, member_ids):
                 if app.filesystem.stage(child):
                     _handle_dataset_analyses(child)
 
-def _handle_datasets(project_id, dataset_data, member_ids, new_member_ids) -> list[app.state.Dataset]:
+def _handle_datasets(project_id, dataset_data, member_ids, new_member_ids) -> list[app.BaseDataset]:
     datasets = []
     for dataset_d in dataset_data:
         dataset = app.state.Dataset.get_one(dataset_d['uuid'])
@@ -68,7 +68,7 @@ def _handle_datasets(project_id, dataset_data, member_ids, new_member_ids) -> li
         datasets.append(dataset)        
     return datasets
 
-def _handle_removed_members(project_id, member_ids, datasets):
+def _handle_removed_members(project_id, member_ids, datasets: list[app.BaseDataset]):
     removed_members = app.state.ProjectMember.get_previous_members(project_id, member_ids)
     for member in removed_members:
         for dataset in datasets:
