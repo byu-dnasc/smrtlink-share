@@ -34,7 +34,7 @@ def _create_permission(member_id, dataset) -> app.state.Permission:
     }
     permission_id = TRANSFER_CLIENT.add_endpoint_acl_rule(app.GLOBUS_COLLECTION_ID, rule_data)
     return app.state.Permission(id=permission_id,
-                                dataset_id=dataset.id,
+                                dataset_id=dataset.uuid,
                                 member_id=member_id)
 
 def _delete_permission(access_rule_id):
@@ -44,12 +44,12 @@ def _delete_permission(access_rule_id):
         ... # TODO Log the error
 
 def remove_permissions(dataset):
-    permissions = app.state.Permission.get_multiple(dataset.id)
+    permissions = app.state.Permission.get_multiple(dataset.uuid)
     for permission in permissions:
         remove_permission(dataset, permission.member_id)
 
 def remove_permission(dataset, member_id):
-    permission = app.state.Permission.get_by(member_id, dataset.id)
+    permission = app.state.Permission.get_by(member_id, dataset.uuid)
     if permission is None:
         app.logger.info(f'Permission for {member_id} to access {dataset.dir_name} not found.')
         return

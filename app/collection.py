@@ -88,7 +88,7 @@ class Dataset(FileCollection, app.BaseDataset):
             return super(Dataset, cls).__new__(cls)
 
     def __init__(self, **kwargs):
-        self._id = kwargs['uuid']
+        self._uuid = kwargs['uuid']
         self._xml = app.xml.DatasetXml(kwargs['path'])
         self._name = kwargs['name']
         if 'parentUuid' in kwargs:
@@ -97,7 +97,7 @@ class Dataset(FileCollection, app.BaseDataset):
     
     @property
     def uuid(self):
-        return self._id
+        return self._uuid
     
     @property
     def _prefix(self):

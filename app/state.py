@@ -24,7 +24,7 @@ class Dataset(AppState, app.BaseDataset):
     @staticmethod
     def add(project_id, dataset):
         (Dataset.insert(project_id=project_id,
-                        id=dataset.id,
+                        id=dataset.uuid,
                         dir_path=dataset.dir_path)
                 .execute())
     
