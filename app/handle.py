@@ -60,7 +60,7 @@ def _handle_new_dataset(project_id, dataset_d, member_ids):
 def _handle_datasets(project_id, dataset_data, member_ids, new_member_ids) -> list[app.BaseDataset]:
     datasets = []
     for dataset_d in dataset_data:
-        dataset = app.state.Dataset.get_one(dataset_d['uuid'])
+        dataset = app.state.Dataset.where_dataset_id(dataset_d['uuid'])
         if dataset is None:
             _handle_new_dataset(project_id, dataset_d, member_ids)
         else: # dataset is app.state.Dataset
@@ -75,17 +75,16 @@ def _handle_removed_members(project_id, member_ids, datasets: list[app.BaseDatas
             app.globus.remove_permission(dataset, member.member_id)
         member.delete_instance()
 
-def _save_new_members(project_id, member_ids):
+def _update_project_members(project_id, member_ids):
     new_members = []
     for member_id in member_ids:
-        project_member = app.state.ProjectMember.get_one(project_id, member_id)
-        if project_member is None:
+        if app.state.ProjectMember.exists(project_id, member_id):
             new_members.append(member_id)
             app.state.ProjectMember.add(project_id, member_id)
     return new_members
 
 def _handle_project(project_id, project_dataset_data, member_ids):
-    new_member_ids = _save_new_members(project_id, member_ids)
+    new_member_ids = _update_project_members(project_id, member_ids)
     datasets = _handle_datasets(project_id, project_dataset_data, member_ids, new_member_ids)
     _handle_removed_members(project_id, member_ids, datasets)
     _handle_removed_datasets(project_dataset_data)
@@ -107,7 +106,7 @@ def new_project():
         return
 
 def deleted_project(project_id):
-    datasets = app.state.Dataset.get_multiple(project_id)
+    datasets = app.state.Dataset.where_project_id(project_id)
     for dataset in datasets:
         app.filesystem.remove(dataset)
         app.globus.remove_permissions(dataset)

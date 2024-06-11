@@ -23,7 +23,7 @@ def _get_transfer_client():
 
 TRANSFER_CLIENT = _get_transfer_client()
 
-def _create_permission(member_id, dataset) -> app.state.Permission:
+def _create_permission(member_id: str, dataset: app.BaseDataset) -> app.state.Permission:
     '''Raises Globus exception.'''
     rule_data = {
         "DATA_TYPE": "access",
@@ -43,13 +43,13 @@ def _delete_permission(access_rule_id):
     except globus_sdk.TransferAPIError:
         ... # TODO Log the error
 
-def remove_permissions(dataset):
-    permissions = app.state.Permission.get_multiple(dataset.uuid)
+def remove_permissions(dataset: app.BaseDataset):
+    permissions = app.state.Permission.where_dataset_id(dataset.uuid)
     for permission in permissions:
         remove_permission(dataset, permission.member_id)
 
-def remove_permission(dataset, member_id):
-    permission = app.state.Permission.get_by(member_id, dataset.uuid)
+def remove_permission(dataset: app.BaseDataset, member_id: str):
+    permission = app.state.Permission.where(member_id, dataset.uuid)
     if permission is None:
         app.logger.info(f'Permission for {member_id} to access {dataset.dir_name} not found.')
         return
@@ -60,7 +60,7 @@ def remove_permission(dataset, member_id):
         return
     permission.delete_instance()
 
-def create_permission(dataset, member_id):
+def create_permission(dataset: app.BaseDataset, member_id: str):
     try:
         permission = _create_permission(member_id, dataset)
     except globus_sdk.GlobusError as e:
