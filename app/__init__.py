@@ -37,12 +37,12 @@ logger.addHandler(handler)
 
 class BaseDataset(abc.ABC):
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def dir_path(self):
         pass
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def uuid(self):
         pass
