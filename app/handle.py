@@ -6,6 +6,11 @@ import app.state
 import app.job
 import app
 
+def update_permissions():
+    """Bring the app's database of permissions up to date by removing
+    the records of any permissions that should be expired."""
+    app.state.Permission.remove_expired()
+
 def _stage_analyses(completed, pending):
     '''
     Stage completed analyses, and track pending analyses.

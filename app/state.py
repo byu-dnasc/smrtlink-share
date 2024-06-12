@@ -1,3 +1,4 @@
+import datetime
 import peewee
 import app
 
@@ -75,12 +76,16 @@ class Permission(peewee.Model):
     id = peewee.CharField(primary_key=True)
     member_id = peewee.CharField()
     dataset_id = peewee.CharField()
+    expiry = peewee.DateTimeField()
 
     @staticmethod
     def add(id: str, member_id: str, dataset_id: str):
+        expiry = datetime.datetime.now() + \
+                 datetime.timedelta(days=app.GLOBUS_PERMISSION_DAYS)
         Permission.insert(id=id,
                           member_id=member_id,
-                          dataset_id=dataset_id).execute()
+                          dataset_id=dataset_id,
+                          expiry=expiry).execute()
     
     @staticmethod
     def where(member_id: str, dataset_id: str) -> 'Permission' or None:
@@ -92,6 +97,13 @@ class Permission(peewee.Model):
         return (Permission.select()
                           .where(Permission.dataset_id == dataset_id)
                           .execute())
+    
+    @staticmethod
+    def remove_expired():
+        now = datetime.datetime.now()
+        (Permission.delete()
+                    .where(Permission.expiry < now)
+                    .execute())
 
 class LastJobUpdate(peewee.Model):
     '''

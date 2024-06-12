@@ -1,3 +1,6 @@
+import datetime
+import unittest.mock
+
 import app.state
 import app
 
@@ -7,6 +10,22 @@ def test_last_job_update():
     app.state.LastJobUpdate.set(time)
     assert app.state.LastJobUpdate.time() == time
 
-def test_permission():
-    app.state.Permission.add('id', 'member_id', 'dataset_id')
-    app.state.Permission.get_by('member_id', 'dataset_id')
+def test_permission_remove_expired_takes_effect():
+    long_ago = '2000-01-01T00:00:00.000Z'
+    app.state.Permission.insert(id='',
+                                member_id='',
+                                dataset_id='', 
+                                expiry=long_ago).execute()
+    assert app.state.Permission.select().count() == 1
+    app.state.Permission.remove_expired()
+    assert app.state.Permission.select().count() == 0
+
+def test_permission_remove_expired_no_effect():
+    tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
+    app.state.Permission.insert(id='',
+                                member_id='',
+                                dataset_id='', 
+                                expiry=tomorrow).execute()
+    assert app.state.Permission.select().count() == 1
+    app.state.Permission.remove_expired()
+    assert app.state.Permission.select().count() == 1
