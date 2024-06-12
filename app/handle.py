@@ -6,7 +6,7 @@ import app.state
 import app.job
 import app
 
-def update_permissions():
+def expired_permissions():
     """Bring the app's database of permissions up to date by removing
     the records of any permissions that should be expired."""
     app.state.Permission.remove_expired()

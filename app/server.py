@@ -85,14 +85,14 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         return request_is_valid
     
     def do_PUT(self):
-        app.handle.update_permissions()
+        app.handle.expired_permissions()
         if not self.handle_response():
             return
         time.sleep(1)
         app.handle.updated_project(self.project_id)        
     
     def do_POST(self):
-        app.handle.update_permissions()
+        app.handle.expired_permissions()
         if not self.handle_response():
             return
         time.sleep(1)
@@ -104,7 +104,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             app.logger.error(f'Unexpected POST request: {self.path}')
         
     def do_DELETE(self):
-        app.handle.update_permissions()
+        app.handle.expired_permissions()
         if not self.handle_response():
             return
         app.handle.deleted_project(self.project_id)
