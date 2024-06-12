@@ -23,7 +23,7 @@ def _get_transfer_client():
 
 TRANSFER_CLIENT = _get_transfer_client()
 
-def _create_permission(member_id: str, dataset: app.BaseDataset) -> app.state.Permission:
+def _create_permission(dataset: app.BaseDataset, member_id: str) -> app.state.Permission:
     '''Raises Globus exception.'''
     rule_data = {
         "DATA_TYPE": "access",
@@ -33,7 +33,7 @@ def _create_permission(member_id: str, dataset: app.BaseDataset) -> app.state.Pe
         "permissions": "r",
     }
     permission_id = TRANSFER_CLIENT.add_endpoint_acl_rule(app.GLOBUS_COLLECTION_ID, rule_data)
-    return app.state.Permission(id=permission_id,
+    app.state.Permission.add(id=permission_id,
                                 dataset_id=dataset.uuid,
                                 member_id=member_id)
 
@@ -51,19 +51,25 @@ def remove_permissions(dataset: app.BaseDataset):
 def remove_permission(dataset: app.BaseDataset, member_id: str):
     permission = app.state.Permission.where(member_id, dataset.uuid)
     if permission is None:
-        app.logger.info(f'Permission for {member_id} to access {dataset.dir_name} not found.')
+        app.logger.info(f'Permission for {member_id} to access {dataset.dir_path} not found.')
         return
     try:
         _delete_permission(permission.id)
     except globus_sdk.GlobusError as e:
-        app.logger.error(f'Failed to remove permission for {member_id} to access {dataset.dir_name}: {e}')
+        app.logger.error(f'Failed to remove permission for {member_id} to access {dataset.dir_path}: {e}')
         return
     permission.delete_instance()
 
 def create_permission(dataset: app.BaseDataset, member_id: str):
     try:
-        permission = _create_permission(member_id, dataset)
-    except globus_sdk.GlobusError as e:
-        app.logger.error(f'Failed to create Globus permission for {member_id} to access {dataset.dir_path}: {e}')
-        return
-    permission.save(force_insert=True)
+        _create_permission(dataset, member_id)
+    except globus_sdk.GlobusAPIError as e:
+        message = f'Failed to create Globus permission in collection ' + \
+            f'{app.GLOBUS_COLLECTION_ID}: Globus API response message(s): ' \
+            f'{e.message}, dataset.dir_path: {dataset.dir_path}, member_id: {member_id}'
+        if e.code == 'Exists':
+            app.logger.info(message)
+        elif e.code == 'LimitExceeded':
+            app.logger.error(f'ACTION REQUIRED: ' + message)
+        else: # e.code == 'InvalidPath', etc.
+            app.logger.error(message)
