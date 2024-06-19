@@ -1,8 +1,6 @@
 import getpass
 import grp
 import os
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def abort(message):
     print(f"Aborting app: {message}")

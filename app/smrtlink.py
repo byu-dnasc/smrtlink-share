@@ -1,5 +1,9 @@
+import urllib3
+
 import app.smrtlink_client
 import app
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class DnascSmrtLinkClient(app.smrtlink_client.SmrtLinkClient):
 
