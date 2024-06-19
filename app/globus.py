@@ -19,7 +19,7 @@ def _get_transfer_client():
         authorizer = _get_authorizer(ACL_CREATION_SCOPE)
         return globus_sdk.TransferClient(authorizer=authorizer)
     except Exception as e:
-        return None
+        app.logger.error(f'Error initializing Globus transfer client: {e}')
 
 TRANSFER_CLIENT = _get_transfer_client()
 

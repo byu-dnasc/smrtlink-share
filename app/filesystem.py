@@ -7,6 +7,12 @@ import app
 os.umask(0) # allow permissions to be specified explicitly
 DIR_PERMISSION=0o1775 # allow group to add and remove their own files, but not delete the directory
 
+try:
+    if not os.path.exists(app.STAGING_ROOT):
+        os.mkdir(app.STAGING_ROOT, DIR_PERMISSION)
+except Exception as e:
+    print(f"Failed to create staging root directory: {e}")
+
 def _make_dir(dir):
     path = os.path.join(app.STAGING_ROOT, dir)
     os.makedirs(path,

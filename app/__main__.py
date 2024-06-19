@@ -1,42 +1,39 @@
+import getpass
 import grp
-import pwd
 import os
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-from app import STAGING_ROOT, APP_USER, GROUP_NAME, APP_PORT
-import app.smrtlink as smrtlink
-import app.globus as globus
-
-# check that all modules have initialized properly
-if smrtlink.CLIENT is None:
-    print('SMRT Link client failed to initialize')
-    exit(1)
-if globus.TRANSFER_CLIENT is None:
-    print('Globus transfer client failed to initialize')
-    exit(1)
-if not os.path.exists(STAGING_ROOT):
-    print(f"Staging root directory '{STAGING_ROOT}' specified in .env file does not exist")
-    exit(1)
-if not os.path.isdir(STAGING_ROOT):
-    print(f"Staging root directory '{STAGING_ROOT}' specified in .env file is not a directory")
-    exit(1)
-dir_owner = pwd.getpwuid(os.stat(STAGING_ROOT).st_uid).pw_name
-if dir_owner != APP_USER:
-    print(f"Staging root directory '{STAGING_ROOT}' is not owned by '{APP_USER}'")
+def abort(message):
+    print(f"Aborting app: {message}")
     exit(1)
 
-# check that the app is running as the correct group
+import app
+
+# check that the app is running as the correct user and group
+if app.APP_USER != getpass.getuser():
+    abort(f"App must be run as user '{app.APP_USER}' specified in .env file.")
 try:
-    gid = grp.getgrnam(GROUP_NAME).gr_gid
+    gid = grp.getgrnam(app.GROUP_NAME).gr_gid
 except KeyError:
-    print(f"Group '{GROUP_NAME}' not found")
-    exit(1)
+    abort(f"Group '{app.GROUP_NAME}' not found")
 if gid != os.getgid():
-    print(f"App must be run as group '{GROUP_NAME}'")
-    exit(1)
+    abort(f"App must be run as group '{app.GROUP_NAME}'")
+
+# check that all modules initialize properly
+import app.smrtlink
+import app.globus
+import app.filesystem # import to create staging root directory
+if app.smrtlink.CLIENT is None:
+    abort('SMRT Link client failed to initialize (check log for error message).')
+if app.globus.TRANSFER_CLIENT is None:
+    abort('Globus transfer client failed to initialize (check log for error message).')
+if not os.path.exists(app.STAGING_ROOT): # otherwise, directory exists and we assume it has proper permissions as set in app/filesystem.py
+    abort(f"Staging root directory '{app.STAGING_ROOT}' specified in .env file does not exist.")
 
 # initialize and run the app
 from app.server import App
 
-app = App(('localhost', APP_PORT))
+app = App(('localhost', app.APP_PORT))
 
 app.run()

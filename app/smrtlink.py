@@ -22,9 +22,6 @@ class DnascSmrtLinkClient(app.smrtlink_client.SmrtLinkClient):
         return [dct['id'] for dct in lst]
    
 def _get_smrtlink_client():
-    """
-    Gets DnascSmrtLinkClient object
-    """
     try:
         return DnascSmrtLinkClient(
             host=app.SMRTLINK_HOST,
@@ -34,7 +31,7 @@ def _get_smrtlink_client():
             verify=False # Disable SSL verification
         )
     except Exception as e:
-        return None
+        app.logger.error(f'Error initializing SMRT Link client: {e}')
 
 CLIENT = _get_smrtlink_client()
 
