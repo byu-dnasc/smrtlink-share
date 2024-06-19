@@ -1,4 +1,5 @@
 import globus_sdk
+import datetime
 
 import app.state
 import app
@@ -25,17 +26,21 @@ TRANSFER_CLIENT = _get_transfer_client()
 
 def _create_permission(dataset: app.BaseDataset, member_id: str) -> app.state.Permission:
     '''Raises Globus exception.'''
+    expiry = datetime.datetime.now() + \
+            datetime.timedelta(days=app.GLOBUS_PERMISSION_DAYS)
     rule_data = {
         "DATA_TYPE": "access",
         "principal_type": "identity",
         "principal": member_id,
         "path": dataset.dir_path,
         "permissions": "r",
+        "expiration_date": expiry.isoformat()
     }
     permission_id = TRANSFER_CLIENT.add_endpoint_acl_rule(app.GLOBUS_COLLECTION_ID, rule_data)
-    app.state.Permission.add(id=permission_id,
-                                dataset_id=dataset.uuid,
-                                member_id=member_id)
+    app.state.Permission.insert(id=permission_id,
+                                member_id=member_id,
+                                dataset_id=dataset.id,
+                                expiry=expiry.isoformat()).execute()
 
 def _delete_permission(access_rule_id):
     try:

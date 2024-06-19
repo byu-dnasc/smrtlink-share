@@ -79,15 +79,6 @@ class Permission(peewee.Model):
     expiry = peewee.DateTimeField()
 
     @staticmethod
-    def add(id: str, member_id: str, dataset_id: str):
-        expiry = datetime.datetime.now() + \
-                 datetime.timedelta(days=app.GLOBUS_PERMISSION_DAYS)
-        Permission.insert(id=id,
-                          member_id=member_id,
-                          dataset_id=dataset_id,
-                          expiry=expiry).execute()
-    
-    @staticmethod
     def where(member_id: str, dataset_id: str) -> 'Permission' or None:
         return Permission.get_or_none(Permission.member_id == member_id,
                                       Permission.dataset_id == dataset_id)
