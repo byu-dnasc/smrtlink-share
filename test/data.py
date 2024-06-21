@@ -1,4 +1,6 @@
-from test.test_collection import TOMATO_PARENT
+TOMATO_PARENT = 'tests/tomatoes/pb_formats/m84100_240301_194028_s1.hifi_reads.consensusreadset.xml'
+TOMATO_20 = 'tests/tomatoes/pb_formats/m84100_240301_194028_s1.hifi_reads.bc1047.consensusreadset.xml'
+TOMATO_21 = 'tests/tomatoes/pb_formats/m84100_240301_194028_s1.hifi_reads.bc1048.consensusreadset.xml'
 
 PROJECT = {
     "id": 1,
