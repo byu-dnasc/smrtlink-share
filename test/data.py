@@ -1,4 +1,4 @@
-from tests.test_collection import TOMATO_PARENT
+from test.test_collection import TOMATO_PARENT
 
 PROJECT = {
     "id": 1,

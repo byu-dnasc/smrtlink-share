@@ -18,7 +18,9 @@ class Dataset(app.BaseDataset):
     def dir_path(self):
         return self._dir_path
 
-assert app.globus.TRANSFER_CLIENT is not None
+@pytest.fixture(autouse=True)
+def validate_transfer_client():
+    assert app.globus.TRANSFER_CLIENT is not None
 
 def test_invalid_path():
     with unittest.mock.patch('app.logger.error') as log_error:
