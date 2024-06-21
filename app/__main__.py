@@ -2,11 +2,12 @@ import getpass
 import grp
 import os
 
+import app.server
+import app
+
 def abort(message):
     print(f"Aborting app: {message}")
     exit(1)
-
-import app
 
 # check that the app is running as the correct user and group
 if app.APP_USER != getpass.getuser():
@@ -30,8 +31,5 @@ if not os.path.exists(app.STAGING_ROOT): # otherwise, directory exists and we as
     abort(f"Staging root directory '{app.STAGING_ROOT}' specified in .env file does not exist.")
 
 # initialize and run the app
-from app.server import App
-
-app = App(('localhost', app.APP_PORT))
-
+app = app.server.App(('localhost', app.APP_PORT))
 app.run()
