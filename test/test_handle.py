@@ -32,7 +32,7 @@ d = {
     CREATE_PERMISSION: 'app.globus.create_permission',
     REMOVE_PERMISSIONS: 'app.globus.remove_permissions',
     REMOVE_PERMISSION: 'app.globus.remove_permission',
-    GET_ANALYSES: 'app.job.get_analyses'
+    GET_ANALYSES: 'app.job.get_analyses',
 }
 
 @unittest.mock.patch(d[GET_ANALYSES])
@@ -53,12 +53,17 @@ class Test:
     def test_sanity(self, *mock):
         '''Make sure that the constant values correspond to 
         the correct mock object.'''
-        for i, m in enumerate(mock):
-            assert m._mock_name == d[i].split('.')[-1]
+        for k, v in d.items():
+            assert mock[k]._mock_name == v.split('.')[-1]
 
-    def test_logger(self, *mock):
+    def test_logger(self, *mock: unittest.mock.Mock):
         app.logger.error('ahhhhhhhhh')
-        assert mock[ERROR].called
+        mock[ERROR].assert_called_once()
     
-    def test_proj1(self, *mock):
-        app.handle.new_project(test.data.PROJECT_1)
+    def test_proj1(self, *mock: unittest.mock.Mock):
+        app.handle._handle_project(test.data.PROJECT_1)
+        mock[STAGE].return_value = True
+        mock[ADD_MEMBER].assert_called_once()
+        mock[ADD_DATASET].assert_called_once()
+        mock[CREATE_PERMISSION].assert_called_once()
+        mock[STAGE].assert_called_once()
