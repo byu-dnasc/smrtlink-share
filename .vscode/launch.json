@@ -9,7 +9,7 @@
             "args": [
                 "-v",
                 "-x",
-                "tests"
+                "test"
             ],
             "console": "integratedTerminal",
             "justMyCode": true,
