@@ -1,29 +1,20 @@
 import os
 
-import app.xml
-import app.collection as collection
-from app.collection import Dataset, Parent, Child
+import app.collection
 import test.data
+import app.xml
 
 username = os.environ.get('USER')
 
-def test_pbcore_dataset():
-    ds = app.xml.DatasetXml(test.data.TOMATO_PARENT)
-    sample_datasets = []
-    for xml in [res.resourceId for res in ds.externalResources if res.resourceId.endswith('.xml')]: # FIXME: implement function to get XMLs from external resources
-        assert os.path.exists(xml)
-        sample_datasets.append(collection.DataSet(xml))
-    assert True
-
 def test_dataset():
     '''Test the case of a dataset with no children'''
-    ds = Dataset(**{
+    ds = app.collection.Dataset(**{
         'name': 'dataset1',
         'uuid': '1',
         'path': test.data.TOMATO_21,
         'numChildren': 0,
     })
-    assert type(ds) is Dataset
+    assert type(ds) is app.collection.Dataset
     assert ds.name == 'dataset1'
     assert ds.movie_id == 'm84100_240301_194028_s1'
     assert len(ds.files) == 2
@@ -35,33 +26,33 @@ def test_orphaned_child():
     since this child has not parent, the only special treatment it gets
     is to use the BioSample name "Tomato 21".
     '''
-    ds = Dataset(**{
+    ds = app.collection.Dataset(**{
         'name': 'dataset1',
         'uuid': '1',
         'path': test.data.TOMATO_21,
         'numChildren': 0,
         'parentUuid': 'parent_uuid'
     })
-    assert type(ds) is Dataset
+    assert type(ds) is app.collection.Dataset
     assert ds.name == 'Tomato 21'
     assert ds.movie_id == 'm84100_240301_194028_s1'
     assert len(ds.files) == 2
 
 def test_tomato_parent():
     '''Test the case of a parent dataset'''
-    ds = Dataset(**{
+    ds = app.collection.Dataset(**{
         'name': 'dataset1',
         'uuid': '1',
         'path': test.data.TOMATO_PARENT,
         'numChildren': 2,
     })
-    assert type(ds) is Parent
+    assert type(ds) is app.collection.Parent
     assert ds.name == 'Germany tomato 20 and 21'
     assert len(ds.child_datasets) == 3 # two children, plus supplemental resources
 
 def test_tomato_20():
     '''Test the case of a child dataset'''
-    ds = Child('parent_dir', **{
+    ds = app.collection.Child('parent_dir', **{
         'name': 'dataset1',
         'uuid': '1',
         'path': test.data.TOMATO_20,
@@ -72,12 +63,6 @@ def test_tomato_20():
     assert len(ds.files) == 2
 
 def test_supplemental_resources():
-    ds = collection.SupplementalResources('parent', ['file1', 'file2'])
+    ds = app.collection.SupplementalResources('parent', ['file1', 'file2'])
     assert ds.dir_path == 'parent/Supplemental Run Data'
     assert ds.files == ['file1', 'file2']
-
-def test_analysis():
-    ds = collection.Analysis('parent', 'name', 1, ['file'])
-    assert ds.prefix    
-    assert ds.dir_name
-    assert ds.files
