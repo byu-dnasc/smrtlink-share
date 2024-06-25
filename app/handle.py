@@ -88,16 +88,19 @@ def _update_project_members(project_id, member_ids):
             app.state.ProjectMember.add(project_id, member_id)
     return new_members
 
-def _handle_project(project_id, project_dataset_data, member_ids):
-    new_member_ids = _update_project_members(project_id, member_ids)
-    datasets = _handle_datasets(project_id, project_dataset_data, member_ids, new_member_ids)
-    _handle_removed_members(project_id, member_ids, datasets)
-    _handle_removed_datasets(project_dataset_data)
+def _handle_project(project_d):
+    dataset_data = project_d['datasets']
+    member_ids = [member['login'] for member in project_d['members'] 
+                  if member['role'] != 'OWNER']
+    new_member_ids = _update_project_members(project_d['id'], member_ids)
+    datasets = _handle_datasets(project_d['id'], dataset_data, member_ids, new_member_ids)
+    _handle_removed_members(project_d['id'], member_ids, datasets)
+    _handle_removed_datasets(project_d['id'], dataset_data)
 
 def updated_project(project_id):
     try:
         data = app.smrtlink.get_project(project_id)
-        _handle_project(project_id, *data)
+        _handle_project(**data)
     except Exception as e:
         app.logger.error(f'Failed to handle update to project {project_id}: {e}')
         return
@@ -105,7 +108,7 @@ def updated_project(project_id):
 def new_project():
     try:
         data = app.smrtlink.get_new_project()
-        _handle_project(*data)
+        _handle_project(**data)
     except Exception as e:
         app.logger.error(f'Failed to handle new project: {e}')
         return
