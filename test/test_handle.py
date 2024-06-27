@@ -1,4 +1,5 @@
 import unittest.mock
+import pytest
 
 import test.data
 import app.handle
@@ -18,52 +19,40 @@ REMOVE_PERMISSIONS = 11
 REMOVE_PERMISSION = 12
 GET_ANALYSES = 13
 
-d = {
-    ERROR: 'app.logger.error',
-    STAGE: 'app.filesystem.stage',
-    UNSTAGE: 'app.filesystem.remove',
-    TRACK_JOB: 'app.job.track',
-    ADD_MEMBER: 'app.state.ProjectMember.add',
-    MEMBER_EXISTS: 'app.state.ProjectMember.exists',
-    PREVIOUS_MEMBERS: 'app.state.ProjectMember.get_previous_members',
-    DATASET_BY_ID: 'app.state.Dataset.where_dataset_id',
-    ADD_DATASET: 'app.state.Dataset.add',
-    PREVIOUS_DATASETS: 'app.state.Dataset.get_previous_datasets',
-    CREATE_PERMISSION: 'app.globus.create_permission',
-    REMOVE_PERMISSIONS: 'app.globus.remove_permissions',
-    REMOVE_PERMISSION: 'app.globus.remove_permission',
-    GET_ANALYSES: 'app.job.get_analyses',
+from unittest.mock import patch
+patchers = {
+    ERROR: patch('app.logger.error'),
+    STAGE: patch('app.filesystem.stage', return_value=True),
+    UNSTAGE: patch('app.filesystem.remove', return_value=True),
+    TRACK_JOB: patch('app.job.track'),
+    ADD_MEMBER: patch('app.state.ProjectMember.add'),
+    MEMBER_EXISTS: patch('app.state.ProjectMember.exists', return_value=False),
+    PREVIOUS_MEMBERS: patch('app.state.ProjectMember.get_previous_members', return_value=[]),
+    DATASET_BY_ID: patch('app.state.Dataset.where_dataset_id', return_value=None),
+    ADD_DATASET: patch('app.state.Dataset.add'),
+    PREVIOUS_DATASETS: patch('app.state.Dataset.get_previous_datasets', return_value=[]),
+    CREATE_PERMISSION: patch('app.globus.create_permission'),
+    REMOVE_PERMISSIONS: patch('app.globus.remove_permissions'),
+    REMOVE_PERMISSION: patch('app.globus.remove_permission'),
+    GET_ANALYSES: patch('app.job.get_analyses', return_value=([], []))
 }
 
-@unittest.mock.patch(d[GET_ANALYSES])
-@unittest.mock.patch(d[REMOVE_PERMISSION])
-@unittest.mock.patch(d[REMOVE_PERMISSIONS])
-@unittest.mock.patch(d[CREATE_PERMISSION])
-@unittest.mock.patch(d[PREVIOUS_DATASETS])
-@unittest.mock.patch(d[ADD_DATASET])
-@unittest.mock.patch(d[DATASET_BY_ID])
-@unittest.mock.patch(d[PREVIOUS_MEMBERS])
-@unittest.mock.patch(d[MEMBER_EXISTS])
-@unittest.mock.patch(d[ADD_MEMBER])
-@unittest.mock.patch(d[TRACK_JOB])
-@unittest.mock.patch(d[UNSTAGE])
-@unittest.mock.patch(d[STAGE])
-@unittest.mock.patch(d[ERROR])
-class Test:
-    def test_sanity(self, *mock):
-        '''Make sure that the constant values correspond to 
-        the correct mock object.'''
-        for k, v in d.items():
-            assert mock[k]._mock_name == v.split('.')[-1]
+@pytest.fixture()
+def mock():
+    mocks = {i: patcher.start() for i, patcher in patchers.items()}
+    yield mocks
+    unittest.mock.patch.stopall()
 
-    def test_logger(self, *mock: unittest.mock.Mock):
-        app.logger.error('ahhhhhhhhh')
-        mock[ERROR].assert_called_once()
-    
-    def test_proj1(self, *mock: unittest.mock.Mock):
-        app.handle._handle_project(test.data.PROJECT_1)
-        mock[STAGE].return_value = True
-        mock[ADD_MEMBER].assert_called_once()
-        mock[ADD_DATASET].assert_called_once()
-        mock[CREATE_PERMISSION].assert_called_once()
-        mock[STAGE].assert_called_once()
+def test_empty_project(mock: dict[int, unittest.mock.MagicMock]):
+    app.handle._handle_project(test.data.PROJECT_1)
+    mock[ADD_MEMBER].assert_called_once()
+    mock[ADD_DATASET].assert_called_once()
+    mock[CREATE_PERMISSION].assert_called_once()
+    mock[STAGE].assert_called_once()
+
+def test_new_dataset(mock: dict[int, unittest.mock.MagicMock]):
+    project = test.data.PROJECT_1
+    project['datasets'].append(test.data.DATASET_1)
+    app.handle._handle_project(test.data.PROJECT_1)
+    mock[ADD_DATASET].assert_called_once()
+    mock[STAGE].assert_called_once()
