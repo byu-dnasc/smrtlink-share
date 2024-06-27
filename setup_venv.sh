@@ -42,5 +42,3 @@ grep -q "peewee" <<< $pip_output
 grep -q "globus-sdk" <<< $pip_output
 grep -q "pytest" <<< $pip_output
 grep -q "python-dotenv" <<< $pip_output
-
-echo "source .env" >> bin/activate
