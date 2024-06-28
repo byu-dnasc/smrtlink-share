@@ -14,25 +14,21 @@ class BaseMeta(peewee.Model.__class__, app.BaseDataset.__class__):
     pass
 
 class Dataset(peewee.Model, app.BaseDataset, metaclass=BaseMeta):
-    id = peewee.CharField(primary_key=True, 
-                      max_length=36)
+    uuid = peewee.CharField(primary_key=True, 
+                        max_length=36)
     project_id = peewee.IntegerField()
     dir_path = peewee.CharField()
-
-    @property
-    def uuid(self):
-        return self.id
 
     @staticmethod
     def add(project_id: int, dataset: app.BaseDataset):
         (Dataset.insert(project_id=project_id,
-                        id=dataset.uuid,
+                        uuid=dataset.uuid,
                         dir_path=dataset.dir_path)
                 .execute())
     
     @staticmethod
-    def where_dataset_id(id: str) -> 'Dataset' or None:
-        return Dataset.get_or_none(Dataset.id == id)
+    def where_dataset_uuid(uuid: str) -> 'Dataset' or None:
+        return Dataset.get_or_none(Dataset.uuid == uuid)
     
     @staticmethod
     def where_project_id(project_id: int) -> list['Dataset']:
@@ -45,8 +41,12 @@ class Dataset(peewee.Model, app.BaseDataset, metaclass=BaseMeta):
         return (Dataset
                 .select()
                 .where(Dataset.project_id == project_id,
-                       Dataset.id.not_in(current_datasets))
+                       Dataset.uuid.not_in(current_datasets))
                 .execute())
+    
+    def update_project_id(self, project_id: int):
+        self.project_id = project_id
+        self.save()
 
 class ProjectMember(peewee.Model):
     project_id = peewee.IntegerField()
