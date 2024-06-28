@@ -22,7 +22,11 @@ def _get_transfer_client():
     except Exception as e:
         app.logger.error(f'Error initializing Globus transfer client: {e}')
 
-TRANSFER_CLIENT = _get_transfer_client()
+if app.GLOBUS_CLIENT_ID == '' or app.GLOBUS_CLIENT_SECRET == '':
+    app.logger.error('No value given for Globus client ID and secret.')
+    TRANSFER_CLIENT = None
+else:
+    TRANSFER_CLIENT = _get_transfer_client()
 
 def _create_permission(dataset: app.BaseDataset, member_id: str) -> app.state.Permission:
     '''Raises Globus exception.'''
