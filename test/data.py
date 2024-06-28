@@ -5,7 +5,6 @@ DATASET_XML_1 = CHILD_XML_1 # When a child's parent is not in the project, then 
 DATASET_XML_2 = CHILD_XML_2 # When a child's parent is not in the project, then it receives no special treatment and thus can serve as a "plain" dataset
 
 DATASET_1 = {
-  'id': 1,
   'name': 'dataset 1 (type: Parent)',
   'uuid': '1',
   'numChildren': 2,
@@ -13,28 +12,24 @@ DATASET_1 = {
 }
 
 DATASET_2 = {
-  'id': 2,
   'name': 'dataset 2 (type: Child)',
   'uuid': '2',
   'path': CHILD_XML_1
 }
 
 DATASET_3 = {
-  'id': 3,
   'name': 'dataset 3 (type: Child)',
   'uuid': '3',
   'path': CHILD_XML_2
 }
 
 DATASET_4 = {
-  'id': 4,
   'name': 'dataset 4 (type: Dataset)',
   'uuid': '4',
   'path': DATASET_XML_1
 }
 
 DATASET_5 = {
-  'id': 5,
   'name': 'dataset 5 (type: Dataset)',
   'uuid': '5',
   'path': DATASET_XML_1
@@ -48,18 +43,4 @@ MEMBER_1 = {
 MEMBER_2 = {
   "login": "member2",
   "role": "CAN_VIEW"
-}
-
-PROJECT_1 = {
-  'id':1,
-  'name':'project 1',
-  'datasets':[],
-  "members": []
-}
-
-PROJECT_2 = {
-  'id':2,
-  'name':'project 2',
-  'datasets':[],
-  "members": []
 }
