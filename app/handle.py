@@ -1,3 +1,5 @@
+import typing
+
 import app.filesystem
 import app.collection
 import app.smrtlink
@@ -35,53 +37,49 @@ def _handle_dataset_analyses(dataset: app.collection.Dataset):
         return
     _stage_analyses(completed, pending)
 
-def _handle_existing_dataset(project_id, dataset: app.state.Dataset, member_ids, new_member_ids):
-    if dataset.project_id == project_id: # visited
-        for member_id in new_member_ids:
-            app.globus.create_permission(dataset, member_id)
-    else: # reassigned
-        app.globus.remove_permissions(dataset)
-        for member_id in member_ids:
-            app.globus.create_permission(dataset, member_id)
-        dataset.update_project_id(project_id)
-
-def _handle_new_dataset(project_id, dataset_d, member_ids):
+def _handle_new_dataset(dataset_d) -> typing.Union[app.collection.Dataset, None]:
     try:
         dataset = app.collection.Dataset(**dataset_d)
     except Exception as e:
         app.logger.error(f"Cannot handle SMRT Link dataset {dataset_d['uuid']}: {e}.")
-        return
+        return None
     if app.filesystem.stage(dataset):
-        for member_id in member_ids:
-            app.globus.create_permission(dataset, member_id)
-        app.state.Dataset.add(dataset, project_id)
+        app.state.Dataset.insert(project_id=dataset_d['projectId'],
+                                 uuid=dataset_d['uuid'],
+                                 dir_path=dataset.dir_path).execute()
         _handle_dataset_analyses(dataset)
         if type(dataset) is app.collection.Parent:
             for child in dataset.child_datasets:
                 if app.filesystem.stage(child):
                     _handle_dataset_analyses(child)
+        return dataset
+    return None
 
-def _handle_datasets(project_id, dataset_data, member_ids, new_member_ids) -> list[app.BaseDataset]:
+def _handle_datasets(dataset_data) -> list[app.BaseDataset]:
     '''
-    Note that although the dictionaries in `dataset_data` record a project 
-    id for each dataset, the `project_id` parameter should be used instead
-    for clarity.
+    Get or create BaseDataset instances and update app state with respect to 
+    datasets. State updates include adding new datasets and updating the 
+    `project_id` of reassigned (existing) datasets.
     '''
     datasets = []
+    reassigned_dataset_uuids = []
     for dataset_d in dataset_data:
-        dataset = app.state.Dataset.where_dataset_uuid(dataset_d['uuid'])
+        dataset = app.state.Dataset.get_by_dataset_uuid(dataset_d['uuid'])
         if dataset is None:
-            _handle_new_dataset(project_id, dataset_d, member_ids)
-        else: # dataset is app.state.Dataset
-            _handle_existing_dataset(project_id, dataset, member_ids, new_member_ids)
-        datasets.append(dataset)        
-    return datasets
+            dataset = _handle_new_dataset(dataset_d)
+        else: 
+            if dataset.project_id is not dataset_d['projectId']:
+                reassigned_dataset_uuids.append(dataset.uuid)
+                dataset.update_project_id(dataset_d['projectId'])
+        if dataset is not None:
+            datasets.append(dataset)
+    return datasets, reassigned_dataset_uuids
 
 def _handle_removed_members(project_id, member_ids, datasets: list[app.BaseDataset]):
     removed_members = app.state.ProjectMember.get_previous_members(project_id, member_ids)
     for member in removed_members:
         for dataset in datasets:
-            app.globus.remove_permission(dataset, member.member_id)
+            app.globus.remove_permission(dataset.uuid, dataset.dir_path, member.member_id)
         member.delete_instance()
 
 def _update_project_members(project_id, member_ids):
@@ -89,13 +87,29 @@ def _update_project_members(project_id, member_ids):
     for member_id in member_ids:
         if app.state.ProjectMember.exists(project_id, member_id):
             new_members.append(member_id)
-            app.state.ProjectMember.add(project_id, member_id)
+            app.state.ProjectMember.insert(project_id=project_id, member_id=member_id).execute()
     return new_members
 
+def _handle_permissions(datasets, reassigned_dataset_ids, member_ids, new_member_ids):
+    for dataset in datasets:
+        if type(dataset) is app.state.Dataset:
+            members_to_add = new_member_ids
+            if dataset.uuid in reassigned_dataset_ids:
+                app.globus.remove_permissions(dataset)
+                members_to_add = member_ids
+            for member in members_to_add:
+                app.globus.create_permission(dataset.uuid, dataset.dir_path, member)
+        elif type(dataset) is app.collection.Dataset:
+            for member in member_ids:
+                app.globus.create_permission(dataset.uuid, dataset.dir_path, member)
+        else:
+            ...
+
 def _handle_project(project_id: int, dataset_data: list[dict], member_ids: list[str]):
+    project_datasets, reassigned_dataset_uuids = _handle_datasets(dataset_data, member_ids)
     new_member_ids = _update_project_members(project_id, member_ids)
-    datasets = _handle_datasets(project_id, dataset_data, member_ids, new_member_ids)
-    _handle_removed_members(project_id, member_ids, datasets)
+    _handle_permissions(project_datasets, reassigned_dataset_uuids, member_ids, new_member_ids)
+    _handle_removed_members(project_id, member_ids, project_datasets)
     _handle_removed_datasets(project_id, dataset_data)
 
 def updated_project(project_id):
@@ -115,7 +129,7 @@ def new_project():
         return
 
 def deleted_project(project_id):
-    datasets = app.state.Dataset.where_project_id(project_id)
+    datasets = app.state.Dataset.get_by_project_id(project_id)
     for dataset in datasets:
         app.filesystem.remove(dataset)
         app.globus.remove_permissions(dataset)
