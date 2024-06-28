@@ -65,13 +65,19 @@ def get_job_files(id):
     '''Get files for a job by id from SMRT Link.'''
     return CLIENT.get_job_datastore(id)
 
-def get_project(id):
+def _get_member_ids(member_data) -> list[str]:
+    return [member['login'] for member in member_data 
+            if member['role'] != 'OWNER']
+
+def get_project(id) -> tuple[list[dict], list[str]]:
     '''Raises Exception'''
     project_d = CLIENT.get_project_dict(id)
-    return project_d['datasets'], project_d['members']
+    member_ids = _get_member_ids(project_d['members'])
+    return project_d['datasets'], member_ids
 
-def get_new_project():
+def get_new_project() -> tuple[int, list[dict], list[str]]:
     '''Raises Exception'''
     sl_ids = CLIENT.get_project_ids()
     project_d = CLIENT.get_project_dict(sl_ids[-1])
-    return project_d['id'], project_d['datasets'], project_d['members']
+    member_ids = _get_member_ids(project_d['members'])
+    return project_d['id'], project_d['datasets'], member_ids

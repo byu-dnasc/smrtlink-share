@@ -43,14 +43,13 @@ def _handle_existing_dataset(project_id, dataset: app.state.Dataset, member_ids,
         app.globus.remove_permissions(dataset)
         for member_id in member_ids:
             app.globus.create_permission(dataset, member_id)
-        dataset.project_id = project_id
-        dataset.save()
+        dataset.update_project_id(project_id)
 
 def _handle_new_dataset(project_id, dataset_d, member_ids):
     try:
         dataset = app.collection.Dataset(**dataset_d)
     except Exception as e:
-        app.logger.error(f"Cannot handle SMRT Link dataset {dataset_d['id']}: {e}.")
+        app.logger.error(f"Cannot handle SMRT Link dataset {dataset_d['uuid']}: {e}.")
         return
     if app.filesystem.stage(dataset):
         for member_id in member_ids:
@@ -63,9 +62,14 @@ def _handle_new_dataset(project_id, dataset_d, member_ids):
                     _handle_dataset_analyses(child)
 
 def _handle_datasets(project_id, dataset_data, member_ids, new_member_ids) -> list[app.BaseDataset]:
+    '''
+    Note that although the dictionaries in `dataset_data` record a project 
+    id for each dataset, the `project_id` parameter should be used instead
+    for clarity.
+    '''
     datasets = []
     for dataset_d in dataset_data:
-        dataset = app.state.Dataset.where_dataset_id(dataset_d['uuid'])
+        dataset = app.state.Dataset.where_dataset_uuid(dataset_d['uuid'])
         if dataset is None:
             _handle_new_dataset(project_id, dataset_d, member_ids)
         else: # dataset is app.state.Dataset
@@ -88,27 +92,24 @@ def _update_project_members(project_id, member_ids):
             app.state.ProjectMember.add(project_id, member_id)
     return new_members
 
-def _handle_project(project_d):
-    dataset_data = project_d['datasets']
-    member_ids = [member['login'] for member in project_d['members'] 
-                  if member['role'] != 'OWNER']
-    new_member_ids = _update_project_members(project_d['id'], member_ids)
-    datasets = _handle_datasets(project_d['id'], dataset_data, member_ids, new_member_ids)
-    _handle_removed_members(project_d['id'], member_ids, datasets)
-    _handle_removed_datasets(project_d['id'], dataset_data)
+def _handle_project(project_id: int, dataset_data: list[dict], member_ids: list[str]):
+    new_member_ids = _update_project_members(project_id, member_ids)
+    datasets = _handle_datasets(project_id, dataset_data, member_ids, new_member_ids)
+    _handle_removed_members(project_id, member_ids, datasets)
+    _handle_removed_datasets(project_id, dataset_data)
 
 def updated_project(project_id):
     try:
-        data = app.smrtlink.get_project(project_id)
-        _handle_project(**data)
+        dataset_data, member_ids = app.smrtlink.get_project(project_id)
+        _handle_project(project_id, dataset_data, member_ids)
     except Exception as e:
         app.logger.error(f'Failed to handle update to project {project_id}: {e}')
         return
 
 def new_project():
     try:
-        data = app.smrtlink.get_new_project()
-        _handle_project(**data)
+        project_id, dataset_data, member_ids = app.smrtlink.get_new_project()
+        _handle_project(project_id, dataset_data, member_ids)
     except Exception as e:
         app.logger.error(f'Failed to handle new project: {e}')
         return
