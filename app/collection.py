@@ -122,9 +122,9 @@ class Parent(Dataset):
     '''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._name = app.xml.get_well_sample_name(self.xml)
+        self._name = app.xml.get_well_sample_name(self._xml)
         self._num_children = kwargs['numChildren']
-        child_dataset_dicts = app.xml.get_child_dataset_dicts(self.xml)
+        child_dataset_dicts = app.xml.get_child_dataset_dicts(self._xml)
         self.child_datasets = []
         for child_dict in child_dataset_dicts:
             try:
@@ -133,7 +133,7 @@ class Parent(Dataset):
                 app.logger.error(f"Cannot handle SMRT Link dataset {child_dict['id']}: {e}.")
                 continue
             self.child_datasets.append(dataset)
-        self.child_datasets.append(app.collection.SupplementalResources(self._dir_name, self.files))
+        self.child_datasets.append(SupplementalResources(self._dir_name, self.files))
 
     @property
     def _prefix(self):
@@ -157,8 +157,8 @@ class Child(Dataset):
     '''
     def __init__(self, parent_dir, **kwargs):
         super().__init__(**kwargs)
-        self._barcode = app.xml.get_barcode(self.xml)
-        self._name = app.xml.get_sample_name(self.xml) # replace DataSet name with BioSample name
+        self._barcode = app.xml.get_barcode(self._xml)
+        self._name = app.xml.get_sample_name(self._xml) # replace DataSet name with BioSample name
         self._parent_dir = parent_dir
     
     @property
