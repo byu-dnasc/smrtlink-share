@@ -1,12 +1,18 @@
 import os
 import abc
+import sys
 import logging
 import dotenv
 
-if not os.path.exists('.env'):
-    raise ImportError('.env file not found.')
-dotenv.load_dotenv()
+CONFIG_FILE = '.env'
+if 'pytest' in sys.modules:
+    CONFIG_FILE = 'test/.env'
 
+if not os.path.exists(CONFIG_FILE):
+    raise ImportError(f'Config file {CONFIG_FILE} not found.')
+
+dotenv.load_dotenv(CONFIG_FILE)
+    
 try:
     GLOBUS_CLIENT_ID = os.environ.get('GLOBUS_CLIENT_ID')
     GLOBUS_CLIENT_SECRET = os.environ.get('GLOBUS_CLIENT_SECRET')
