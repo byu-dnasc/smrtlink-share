@@ -1,5 +1,4 @@
 import datetime
-import unittest.mock
 
 import app.state
 import app
@@ -29,3 +28,11 @@ def test_permission_remove_expired_no_effect():
     assert app.state.Permission.select().count() == 1
     app.state.Permission.remove_expired()
     assert app.state.Permission.select().count() == 1
+
+def test_dataset_update_project_id():
+    dataset: app.state.Dataset = app.state.Dataset.create(uuid='1234',
+                                                          project_id=1,
+                                                          dir_path='whatever')
+    assert dataset.project_id == 1
+    dataset.update_project_id(2)
+    assert dataset.project_id == 2
