@@ -42,12 +42,13 @@ class Dataset(peewee.Model, app.BaseDataset, metaclass=BaseMeta):
                        .execute())
     
     @staticmethod
-    def get_previous_datasets(project_id: int, current_datasets: list[str]) -> list['Dataset']:
-        return (Dataset
-                .select()
-                .where(Dataset.project_id == project_id,
-                       Dataset.uuid.not_in(current_datasets))
-                .execute())
+    def get_removed_datasets(project_id: int, current_datasets: list[str]) -> list['Dataset']:
+        '''Get the datasets which were associated with `project_id` as of the last
+        update, but are now no longer associated with it.'''
+        return (Dataset.select()
+                       .where(Dataset.project_id == project_id,
+                              Dataset.uuid.not_in(current_datasets))
+                       .execute())
     
     def update_project_id(self, project_id: int):
         self.project_id = project_id
@@ -65,7 +66,7 @@ class ProjectMember(peewee.Model):
                             .exists())
 
     @staticmethod
-    def get_previous_members(project_id: int, current_members: list[str]) -> list['ProjectMember']:
+    def get_removed_members(project_id: int, current_members: list[str]) -> list['ProjectMember']:
         return (ProjectMember
                 .select()
                 .where(ProjectMember.project_id == project_id,
