@@ -34,13 +34,3 @@ DATASET_5 = {
   'uuid': '5',
   'path': DATASET_XML_1
 }
-
-MEMBER_1 = {
-  "login": "member1",
-  "role": "OWNER"
-}
-
-MEMBER_2 = {
-  "login": "member2",
-  "role": "CAN_VIEW"
-}
