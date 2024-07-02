@@ -1,3 +1,5 @@
+import typing
+
 from pbcore.io.dataset.DataSetIO import DataSet as DatasetXml
 from pbcore.io.dataset.DataSetMembers import ExternalResource, ExternalResources
 
@@ -59,13 +61,13 @@ def get_child_dataset_dicts(parent_xml):
             'path': subdataset_xml_file,
         }
 
-def get_movie_id(xml: DatasetXml) -> str | None:
+def get_movie_id(xml: DatasetXml) -> typing.Union[str, None]:
     return (xml.metadata['Collections']
                         ['CollectionMetadata']
                         .record['attrib']
                         ['Context'])
 
-def get_sample_name(xml: DatasetXml) -> str | None:
+def get_sample_name(xml: DatasetXml) -> typing.Union[str, None]:
     '''Get the sample name from a dataset XML file
     '''
     return (xml.metadata['Collections']
@@ -76,7 +78,7 @@ def get_sample_name(xml: DatasetXml) -> str | None:
                         ['Name']
                         )
 
-def get_well_sample_name(xml: DatasetXml) -> str | None:
+def get_well_sample_name(xml: DatasetXml) -> typing.Union[str, None]:
     '''This is the name given to represent all DNA that was loaded
     in a cell. This name should only be used for parent datasets.
     '''
@@ -86,7 +88,7 @@ def get_well_sample_name(xml: DatasetXml) -> str | None:
                         .record['attrib']
                         ['Name'])
 
-def get_barcode(xml: DatasetXml) -> str | None:
+def get_barcode(xml: DatasetXml) -> typing.Union[str, None]:
     try:
         return (xml.metadata['Collections']
                             ['CollectionMetadata']
